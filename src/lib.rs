@@ -1,4 +1,9 @@
+use tracing::instrument;
+use tracing;
+
+#[instrument]
 pub fn add(left: usize, right: usize) -> usize {
+    tracing::debug!("adding {} and {}", left, right);
     left + right
 }
 
