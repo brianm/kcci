@@ -1,5 +1,5 @@
 use clap::Parser;
-use ki;
+use kcci;
 
 use tracing;
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
@@ -32,7 +32,7 @@ fn main() {
         tracing::span!(tracing::Level::INFO, "greeting", count= %i, name = %args.name).in_scope(
             || {
                 tracing::event!(tracing::Level::INFO, "greeting");
-                println!("{} Hello {}!", ki::add(2, 2), args.name);
+                println!("{} Hello {}!", kcci::add(2, 2), args.name);
                 tracing::event!(tracing::Level::INFO, name = "after", thing = "woof", "blep");
             },
         );
