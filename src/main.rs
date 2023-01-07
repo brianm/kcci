@@ -1,10 +1,9 @@
 use clap::Parser;
 use kcci;
 
-use tracing;
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
-/// A simple CLI for the ki library
+/// A simple CLI for the kcci library
 ///
 #[derive(Parser, Debug)]
 #[command(author, version, about)]
@@ -21,7 +20,7 @@ struct Args {
 fn main() {
     tracing_subscriber::registry()
         .with(fmt::layer().with_writer(std::io::stderr))
-        .with(EnvFilter::from_env("KI_LOG"))
+        .with(EnvFilter::from_env("KCCI_LOG"))
         .init();
 
     let s = tracing::span!(tracing::Level::INFO, "main");
