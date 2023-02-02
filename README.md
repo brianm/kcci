@@ -2,9 +2,8 @@
 
 ## .plan
 
-
-
 ## References
+
 * [Library of Congress API](https://loc.gov/apis)
 * [OpenLibrary](https://openlibrary.org) [API](https://openlibrary.org/developers/api)
 * [WorldCat](https://www.oclc.org/developer/api/oclc-apis/worldcat-search-api.en.html0)
