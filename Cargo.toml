@@ -9,7 +9,7 @@ description = "Build and query indexes of books"
 
 [dependencies]
 clap = { version = "4.0", features = ["derive"] }
-rust-bert = "0.19.0"
+rust-bert = "0.20.0"
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.16", features = ["env-filter", "std"]}
 

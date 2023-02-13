@@ -24,10 +24,11 @@ mod tests {
     #[test]
     fn berty() {
         let model = SentenceEmbeddingsBuilder::remote(SentenceEmbeddingsModelType::AllMiniLmL12V2)
-            .create_model().unwrap();
+            .create_model()
+            .unwrap();
 
         let sentences = ["this is an example sentence", "each sentence is converted"];
 
-        let output = model.predict(&sentences);
+        let output = model.encode(&sentences);
     }
 }
