@@ -8,6 +8,7 @@ torch = "*"
 sentence-transformers = "*"
 requests = "*"
 httpx = "*"
+click = "*"
 
 [dev-packages]
 
