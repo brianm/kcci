@@ -32,8 +32,12 @@ def openlibrary_lookup(name: str, authors: List[str]) -> Book:
         raise Exception('Bad response from server: %s' % r.status_code)
 
     doc = r.json()
+    desc = doc['description']
+    if type(desc) == dict:
+        desc = doc['description']['value']
+    
+    return Book(title, authors, desc)
 
-    return Book(title, authors, doc['description']['value'])
 
 def loc_lookup(name: str, authors: List[str]) -> Book:
     r = requests.get('https://www.loc.gov/books/', params={
