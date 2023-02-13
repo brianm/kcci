@@ -49,8 +49,7 @@ def loc_lookup(name: str, authors: List[str]) -> Book:
     if r.status_code != 200:
         raise Exception('Bad response from server: %s' % r.status_code)
 
-    data = r.json()
-    print(data)
+    return r.json()
 
 
 if __name__ == '__main__':

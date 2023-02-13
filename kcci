@@ -48,8 +48,17 @@ def basics():
 @cli.command()
 @click.option('--author', '-a', multiple=True)
 @click.option('--title', '-t')
-def search(title: str, author: List[str]):
+def ol(title: str, author: List[str]):
     book = bf.openlibrary_lookup(title, author)
+    click.echo(f"{book.title} by {', '.join(book.authors)}")
+    click.echo("")
+    click.echo(book.description)
+
+@cli.command()
+@click.option('--author', '-a', multiple=True)
+@click.option('--title', '-t')
+def loc(title: str, author: List[str]):
+    book = bf.loc_lookup(title, author)
     click.echo(f"{book.title} by {', '.join(book.authors)}")
     click.echo("")
     click.echo(book.description)
