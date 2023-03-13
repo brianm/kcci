@@ -21,3 +21,4 @@
 * [FAISS](https://github.com/facebookresearch/faiss)
   * To save the index: `faiss.write_index(index, filename)`
   * To load the index: `index = faiss.read_index(filename)`
+* [Textual](https://textual.textualize.io) terminal ui library

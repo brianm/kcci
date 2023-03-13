@@ -9,9 +9,9 @@ sentence-transformers = "*"
 requests = "*"
 httpx = "*"
 click = "*"
+openlibrary-client = {git = "https://github.com/internetarchive/openlibrary-client.git"}
 
 [dev-packages]
 
 [requires]
 python_version = "3.10"
-
