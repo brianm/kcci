@@ -1,9 +1,9 @@
 from typing import List
 import requests
 
-'''
+"""
 For a given `(title, authors)` pair find the most likely candidate from Open Library.
-'''
+"""
 
 class Book:
     def __init__(self, title: str, authors: List[str], description: str) -> None:
