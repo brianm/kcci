@@ -1,32 +1,140 @@
 use std::io::{self, BufRead};
 
+#[derive(Debug, PartialEq)]
 pub struct Candidate {
     pub title: String,
     pub authors: Vec<String>,
     pub series: Option<String>,
 }
 
-pub fn try_kindle_paste<I: BufRead>(vals: &mut I) -> std::io::Result<String> {
-    for lin in vals.lines() {
-        let line = lin?;
-        if line.starts_with("==========") {
-            return Ok(line);
-        }
-    }
-    Ok("hello world".to_string())
+enum PasteParseState {
+    AwaitNotesAndHighlights,
+    ExpectTitle {
+        previous_line: String,
+    },
+    ExpectAuthor {
+        title: String,
+        previous_line: String,
+    }, // value is previous line
 }
 
+pub fn parse_paste<I: BufRead>(vals: &mut I) -> std::io::Result<Vec<Candidate>> {
+    let mut state = PasteParseState::AwaitNotesAndHighlights;
+    let mut candidates = Vec::new();
+
+    for lin in vals.lines() {
+        let line = lin?;
+        match state {
+            PasteParseState::AwaitNotesAndHighlights => {
+                if line == "Notes & Highlights" {
+                    state = PasteParseState::ExpectTitle {
+                        previous_line: line,
+                    };
+                }
+            }
+            PasteParseState::ExpectTitle { ref previous_line } => {
+                if line.is_empty() {
+                    continue;
+                }
+                if &line == previous_line {
+                    continue;
+                }
+                state = PasteParseState::ExpectAuthor {
+                    title: line.clone(),
+                    previous_line: line,
+                };
+            }
+            PasteParseState::ExpectAuthor {
+                ref title,
+                ref previous_line,
+            } => {
+                if line.is_empty() {
+                    continue;
+                }
+                if &line == previous_line {
+                    continue;
+                }
+                let authors = line.split(";").map(|s| s.trim().to_string()).collect();
+                candidates.push(Candidate {
+                    title: title.clone(),
+                    authors,
+                    series: None,
+                });
+                state = PasteParseState::ExpectTitle {
+                    previous_line: line,
+                };
+            }
+        }
+    }
+    Ok(candidates)
+}
+
+//
+/**
+ * Basic Logic:
+ * - read to "Notes & Highlights"
+ * - Skip blank lines
+ * - Expect alternating Title | Author
+ * - Any line may duplicate the previous line, if so, ignore it
+ */
 #[cfg(test)]
 mod tests {
     use super::*;
     use pretty_assertions::{assert_eq, assert_ne};
 
     #[test]
-    fn it_works() {
+    fn test_safari() {
         let mut buf = SAFARI.clone().as_bytes();
-        let r = try_kindle_paste(&mut buf);
+        let r = parse_paste(&mut buf);
+        assert!(matches!(r, Ok(_)));
 
-        assert_eq!(r.unwrap(), "hello world");
+        let vals = r.unwrap();
+
+        let expected = vec![
+            Candidate {
+                title: "Stiletto: A Novel (The Rook Files Book 2)".to_string(),
+                authors: vec![
+                    "O'Malley, Daniel".to_string(),
+                    "O'Malley, Daniel".to_string(),
+                ],
+                series: None,
+            },
+            Candidate {
+                title: "The Joy of Abstraction: An Exploration of Math, Category Theory, and Life"
+                    .to_string(),
+                authors: vec!["Cheng, Eugenia".to_string()],
+                series: None,
+            },
+        ];
+
+        assert_eq!(vals, expected);
+    }
+
+    fn test_chrome() {
+        let mut buf = CHROME.clone().as_bytes();
+        let r = parse_paste(&mut buf);
+        assert!(matches!(r, Ok(_)));
+
+        let vals = r.unwrap();
+
+        let expected = vec![
+            Candidate {
+                title: "Stiletto: A Novel (The Rook Files Book 2)".to_string(),
+                authors: vec![
+                    "O'Malley, Daniel".to_string(),
+                    "O'Malley, Daniel".to_string(),
+                ],
+                series: None,
+            },
+            Candidate {
+                title: "The Joy of Abstraction: An Exploration of Math, Category Theory, and Life"
+                    .to_string(),
+                authors: vec!["Cheng, Eugenia".to_string()],
+                series: None,
+            },
+        ];
+
+        assert_eq!(vals, expected);
     }
 
     static SAFARI: &str = r#"
