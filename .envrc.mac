@@ -1,0 +1,5 @@
+# Instructions from https://github.com/guillaume-be/rust-bert#macos--homebrew
+
+# brew install pytorch jq
+export LIBTORCH=$(brew --cellar pytorch)/$(brew info --json pytorch | jq -r '.[0].installed[0].version')
+export LD_LIBRARY_PATH=${LIBTORCH}/lib:$LD_LIBRARY_PATH
