@@ -24,8 +24,8 @@ impl Candidate {
 /// This is going to need to expand to get all heuristic, I fear.
 /// It may need to change to keep the original line, so we can do various
 /// lookups agfainst APIs with variants on the original.
-/// 
-/// most likely, will have raw_title, raw_athors, and then a thing to generate a 
+///
+/// most likely, will have raw_title, raw_athors, and then a thing to generate a
 /// probablistic sequence of things based on heuristics, for querying API to get metadata.
 fn parse_title(line: &String) -> (String, Option<String>, Option<u32>) {
     let mut title = line.clone();
@@ -150,8 +150,7 @@ mod tests {
                 sequence_in_series: None,
             },
             Candidate {
-                title: "Assassin's Apprentice"
-                    .to_string(),
+                title: "Assassin's Apprentice".to_string(),
                 authors: vec!["Hobb, Robin".to_string()],
                 series: Some("The Farseer Trilogy".to_string()),
                 sequence_in_series: Some(1),

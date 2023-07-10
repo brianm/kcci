@@ -1,39 +1,32 @@
-use clap::Parser;
-use kcci;
-
-use tracing_subscriber::{fmt, prelude::*, EnvFilter};
+use clap::{Parser, Subcommand};
+use kcci::ingest;
+use log::info;
+use std::io::{self, BufReader};
 
 /// A simple CLI for the kcci library
 ///
 #[derive(Parser, Debug)]
 #[command(author, version, about)]
 struct Args {
-    /// Name of the person to greet
-    #[arg(short, long)]
-    name: String,
+    #[command(subcommand)]
+    command: Commands,
+}
 
-    /// Number of times to greet
-    #[arg(short, long, default_value_t = 1)]
-    count: u8,
+#[derive(Debug, Subcommand)]
+enum Commands {
+    Ingest,
 }
 
 fn main() {
-    tracing_subscriber::registry()
-        .with(fmt::layer().with_writer(std::io::stderr))
-        .with(EnvFilter::from_env("KCCI_LOG"))
-        .init();
-
-    let s = tracing::span!(tracing::Level::INFO, "main");
-    let _enter = s.enter();
-
+    env_logger::init_from_env("KCCI_LOG");
     let args = Args::parse();
-    for i in 0..args.count {
-        tracing::span!(tracing::Level::INFO, "greeting", count= %i, name = %args.name).in_scope(
-            || {
-                tracing::event!(tracing::Level::INFO, "greeting");
-                println!("{} Hello {}!", kcci::add(2, 2), args.name);
-                tracing::event!(tracing::Level::INFO, name = "after", thing = "woof", "blep");
-            },
-        );
+    match args.command {
+        Commands::Ingest => {
+            let mut reader = std::io::stdin().lock();
+            let out = ingest::parse_paste(&mut reader).unwrap();
+            for c in out {
+                println!("{:?}", c);
+            }
+        }
     }
 }
