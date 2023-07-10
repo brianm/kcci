@@ -9,6 +9,24 @@ pub struct Candidate {
     pub sequence_in_series: Option<u32>,
 }
 
+impl Candidate {
+    pub fn new(title: &str, authors: Vec<String>) -> Self {
+        let (title, series, sequence_in_series) = parse_title(&title.to_string());
+        Candidate {
+            title,
+            authors,
+            series,
+            sequence_in_series,
+        }
+    }
+}
+
+/// This is going to need to expand to get all heuristic, I fear.
+/// It may need to change to keep the original line, so we can do various
+/// lookups agfainst APIs with variants on the original.
+/// 
+/// most likely, will have raw_title, raw_athors, and then a thing to generate a 
+/// probablistic sequence of things based on heuristics, for querying API to get metadata.
 fn parse_title(line: &String) -> (String, Option<String>, Option<u32>) {
     let mut title = line.clone();
     let mut series = None;
@@ -22,19 +40,6 @@ fn parse_title(line: &String) -> (String, Option<String>, Option<u32>) {
     });
     return (title, series, sequence_in_series);
 }
-
-impl Candidate {
-    pub fn new(title: &str, authors: Vec<String>) -> Self {
-        let (title, series, sequence_in_series) = parse_title(&title.to_string());
-        Candidate {
-            title,
-            authors,
-            series,
-            sequence_in_series,
-        }
-    }
-}
-
 enum PasteParseState {
     AwaitNotesAndHighlights,
     ExpectTitle {
