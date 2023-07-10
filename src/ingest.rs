@@ -1,10 +1,38 @@
-use std::io::{self, BufRead};
+use regex::Regex;
+use std::io::BufRead;
 
 #[derive(Debug, PartialEq)]
 pub struct Candidate {
     pub title: String,
     pub authors: Vec<String>,
     pub series: Option<String>,
+    pub sequence_in_series: Option<u32>,
+}
+
+fn parse_title(line: &String) -> (String, Option<String>, Option<u32>) {
+    let mut title = line.clone();
+    let mut series = None;
+    let mut sequence_in_series = None;
+
+    let re = Regex::new(r"^(.*) \((.*) Book (\d+)\)$").unwrap();
+    re.captures(&line).map(|cap| {
+        title = cap[1].to_string();
+        series = Some(cap[2].to_string());
+        sequence_in_series = Some(cap[3].parse::<u32>().unwrap());
+    });
+    return (title, series, sequence_in_series);
+}
+
+impl Candidate {
+    pub fn new(title: &str, authors: Vec<String>) -> Self {
+        let (title, series, sequence_in_series) = parse_title(&title.to_string());
+        Candidate {
+            title,
+            authors,
+            series,
+            sequence_in_series,
+        }
+    }
 }
 
 enum PasteParseState {
@@ -55,11 +83,7 @@ pub fn parse_paste<I: BufRead>(vals: &mut I) -> std::io::Result<Vec<Candidate>> 
                     continue;
                 }
                 let authors = line.split(";").map(|s| s.trim().to_string()).collect();
-                candidates.push(Candidate {
-                    title: title.clone(),
-                    authors,
-                    series: None,
-                });
+                candidates.push(Candidate::new(title, authors));
                 state = PasteParseState::ExpectTitle {
                     previous_line: line,
                 };
@@ -80,7 +104,7 @@ pub fn parse_paste<I: BufRead>(vals: &mut I) -> std::io::Result<Vec<Candidate>> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pretty_assertions::{assert_eq, assert_ne};
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn test_safari() {
@@ -89,52 +113,38 @@ mod tests {
         assert!(matches!(r, Ok(_)));
 
         let vals = r.unwrap();
-
-        let expected = vec![
-            Candidate {
-                title: "Stiletto: A Novel (The Rook Files Book 2)".to_string(),
-                authors: vec![
-                    "O'Malley, Daniel".to_string(),
-                    "O'Malley, Daniel".to_string(),
-                ],
-                series: None,
-            },
-            Candidate {
-                title: "The Joy of Abstraction: An Exploration of Math, Category Theory, and Life"
-                    .to_string(),
-                authors: vec!["Cheng, Eugenia".to_string()],
-                series: None,
-            },
-        ];
-
-        assert_eq!(vals, expected);
+        assert_eq!(vals, expected());
     }
 
+    #[test]
     fn test_chrome() {
         let mut buf = CHROME.clone().as_bytes();
         let r = parse_paste(&mut buf);
         assert!(matches!(r, Ok(_)));
 
         let vals = r.unwrap();
+        assert_eq!(vals, expected());
+    }
 
-        let expected = vec![
+    fn expected() -> Vec<Candidate> {
+        return vec![
             Candidate {
-                title: "Stiletto: A Novel (The Rook Files Book 2)".to_string(),
+                title: "Stiletto: A Novel".to_string(),
                 authors: vec![
                     "O'Malley, Daniel".to_string(),
                     "O'Malley, Daniel".to_string(),
                 ],
-                series: None,
+                series: Some("The Rook Files".to_string()),
+                sequence_in_series: Some(2),
             },
             Candidate {
                 title: "The Joy of Abstraction: An Exploration of Math, Category Theory, and Life"
                     .to_string(),
                 authors: vec!["Cheng, Eugenia".to_string()],
                 series: None,
+                sequence_in_series: None,
             },
         ];
-
-        assert_eq!(vals, expected);
     }
 
     static SAFARI: &str = r#"
