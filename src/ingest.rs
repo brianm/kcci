@@ -14,7 +14,7 @@ fn parse_title(line: &String) -> (String, Option<String>, Option<u32>) {
     let mut series = None;
     let mut sequence_in_series = None;
 
-    let re = Regex::new(r"^(.*) \((.*) Book (\d+)\)$").unwrap();
+    let re = Regex::new(r"^(.*) \((.*?),? Book (\d+)\)$").unwrap();
     re.captures(&line).map(|cap| {
         title = cap[1].to_string();
         series = Some(cap[2].to_string());
@@ -144,6 +144,13 @@ mod tests {
                 series: None,
                 sequence_in_series: None,
             },
+            Candidate {
+                title: "Assassin's Apprentice"
+                    .to_string(),
+                authors: vec!["Hobb, Robin".to_string()],
+                series: Some("The Farseer Trilogy".to_string()),
+                sequence_in_series: Some(1),
+            },
         ];
     }
 
@@ -174,6 +181,8 @@ The Joy of Abstraction: An Exploration of Math, Category Theory, and Life
 The Joy of Abstraction: An Exploration of Math, Category Theory, and Life
 The Joy of Abstraction: An Exploration of Math, Category Theory, and Life
 Cheng, Eugenia
+Assassin's Apprentice (The Farseer Trilogy, Book 1)
+Hobb, Robin
 "#;
 
     static CHROME: &str = r#"
@@ -202,5 +211,10 @@ O'Malley, Daniel; O'Malley, Daniel
 The Joy of Abstraction: An Exploration of Math, Category Theory, and Life
 
 Cheng, Eugenia
+
+Assassin's Apprentice (The Farseer Trilogy, Book 1)
+
+Hobb, Robin
+
 "#;
 }
