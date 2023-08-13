@@ -1,6 +1,6 @@
+use linked_hash_set::LinkedHashSet;
 use regex::Regex;
 use std::io::BufRead;
-use linked_hash_set::LinkedHashSet;
 
 #[derive(Debug, PartialEq)]
 pub struct Candidate {
@@ -129,13 +129,15 @@ mod tests {
     #[test]
     fn test_extract_parts() {
         let c = Candidate {
-            raw_authors: vec!["O'Malley, Daniel".to_string(), "O'Malley, Daniel".to_string()],
+            raw_authors: vec![
+                "O'Malley, Daniel".to_string(),
+                "O'Malley, Daniel".to_string(),
+            ],
             raw_title: "Stiletto: A Novel (The Rook Files Book 2)".to_string(),
         };
         assert_eq!(c.authors(), vec!["O'Malley, Daniel".to_string()]); // removed dup author
         assert_eq!(c.title(), "Stiletto: A Novel");
         assert_eq!(c.series(), Some(("The Rook Files".to_string(), Some(2))));
-
     }
 
     #[test]
