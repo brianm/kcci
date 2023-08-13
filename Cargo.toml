@@ -10,6 +10,7 @@ description = "Build and query indexes of books"
 [dependencies]
 clap = { version = "4.0", features = ["derive"] }
 env_logger = "0.10.0"
+linked_hash_set = "0.1.4"
 log = "0.4.19"
 regex = "1.9.1"
 rust-bert = "0.21.0"

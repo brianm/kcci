@@ -1,10 +1,11 @@
 use regex::Regex;
 use std::io::BufRead;
+use linked_hash_set::LinkedHashSet;
 
 #[derive(Debug, PartialEq)]
 pub struct Candidate {
-    pub raw_title: String,
-    pub raw_authors: Vec<String>,
+    raw_title: String,
+    raw_authors: Vec<String>,
 }
 
 impl Candidate {
@@ -21,12 +22,11 @@ impl Candidate {
     }
 
     pub fn authors(&self) -> Vec<String> {
-        let (_, authors, _) = parse_title(&self.raw_title);
-        authors
-            .unwrap_or(String::new())
-            .split(';')
-            .map(|s| s.trim().to_string())
-            .collect()
+        let mut s = LinkedHashSet::new();
+        for a in &self.raw_authors {
+            s.insert(a.to_string());
+        }
+        s.into_iter().collect::<Vec<_>>()
     }
 
     pub fn series(&self) -> Option<(String, Option<u32>)> {
@@ -125,6 +125,18 @@ pub fn parse_paste<I: BufRead>(vals: &mut I) -> std::io::Result<Vec<Candidate>> 
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
+
+    #[test]
+    fn test_extract_parts() {
+        let c = Candidate {
+            raw_authors: vec!["O'Malley, Daniel".to_string(), "O'Malley, Daniel".to_string()],
+            raw_title: "Stiletto: A Novel (The Rook Files Book 2)".to_string(),
+        };
+        assert_eq!(c.authors(), vec!["O'Malley, Daniel".to_string()]); // removed dup author
+        assert_eq!(c.title(), "Stiletto: A Novel");
+        assert_eq!(c.series(), Some(("The Rook Files".to_string(), Some(2))));
+
+    }
 
     #[test]
     fn test_safari() {

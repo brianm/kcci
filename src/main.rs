@@ -23,7 +23,7 @@ fn main() {
             let mut reader = std::io::stdin().lock();
             let out = ingest::parse_paste(&mut reader).unwrap();
             for c in out {
-                println!("{:?}", c);
+                println!("{}\t{}", c.title(), c.authors().join(", "));
             }
         }
     }
