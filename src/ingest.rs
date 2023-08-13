@@ -3,21 +3,35 @@ use std::io::BufRead;
 
 #[derive(Debug, PartialEq)]
 pub struct Candidate {
-    pub title: String,
-    pub authors: Vec<String>,
-    pub series: Option<String>,
-    pub sequence_in_series: Option<u32>,
+    pub raw_title: String,
+    pub raw_authors: Vec<String>,
 }
 
 impl Candidate {
-    pub fn new(title: &str, authors: Vec<String>) -> Self {
-        let (title, series, sequence_in_series) = parse_title(&title.to_string());
+    pub fn new(raw_line: &str, authors: Vec<String>) -> Self {
         Candidate {
-            title,
-            authors,
-            series,
-            sequence_in_series,
+            raw_title: String::from(raw_line),
+            raw_authors: authors,
         }
+    }
+
+    pub fn title(&self) -> String {
+        let (title, _, _) = parse_title(&self.raw_title);
+        title
+    }
+
+    pub fn authors(&self) -> Vec<String> {
+        let (_, authors, _) = parse_title(&self.raw_title);
+        authors
+            .unwrap_or(String::new())
+            .split(";")
+            .map(|s| s.trim().to_string())
+            .collect()
+    }
+
+    pub fn series(&self) -> Option<(String, Option<u32>)> {
+        let (_, series, num) = parse_title(&self.raw_title);
+        series.map(|s| (s, num))
     }
 }
 
@@ -134,26 +148,20 @@ mod tests {
     fn expected() -> Vec<Candidate> {
         return vec![
             Candidate {
-                title: "Stiletto: A Novel".to_string(),
-                authors: vec![
+                raw_title: "Stiletto: A Novel (The Rook Files Book 2)".to_string(),
+                raw_authors: vec![
                     "O'Malley, Daniel".to_string(),
                     "O'Malley, Daniel".to_string(),
-                ],
-                series: Some("The Rook Files".to_string()),
-                sequence_in_series: Some(2),
+                ],                
             },
             Candidate {
-                title: "The Joy of Abstraction: An Exploration of Math, Category Theory, and Life"
+                raw_title: "The Joy of Abstraction: An Exploration of Math, Category Theory, and Life"
                     .to_string(),
-                authors: vec!["Cheng, Eugenia".to_string()],
-                series: None,
-                sequence_in_series: None,
+                raw_authors: vec!["Cheng, Eugenia".to_string()],                
             },
             Candidate {
-                title: "Assassin's Apprentice".to_string(),
-                authors: vec!["Hobb, Robin".to_string()],
-                series: Some("The Farseer Trilogy".to_string()),
-                sequence_in_series: Some(1),
+                raw_title: "Assassin's Apprentice (The Farseer Trilogy, Book 1)".to_string(),
+                raw_authors: vec!["Hobb, Robin".to_string()],                
             },
         ];
     }
