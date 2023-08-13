@@ -1,7 +1,5 @@
 use clap::{Parser, Subcommand};
 use kcci::ingest;
-use log::info;
-use std::io::{self, BufReader};
 
 /// A simple CLI for the kcci library
 ///

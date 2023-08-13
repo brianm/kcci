@@ -24,7 +24,7 @@ impl Candidate {
         let (_, authors, _) = parse_title(&self.raw_title);
         authors
             .unwrap_or(String::new())
-            .split(";")
+            .split(';')
             .map(|s| s.trim().to_string())
             .collect()
     }
@@ -41,18 +41,19 @@ impl Candidate {
 ///
 /// most likely, will have raw_title, raw_athors, and then a thing to generate a
 /// probablistic sequence of things based on heuristics, for querying API to get metadata.
-fn parse_title(line: &String) -> (String, Option<String>, Option<u32>) {
-    let mut title = line.clone();
+fn parse_title(line: &str) -> (String, Option<String>, Option<u32>) {
+    let mut title = line.to_owned();
     let mut series = None;
     let mut sequence_in_series = None;
 
     let re = Regex::new(r"^(.*) \((.*?),? Book (\d+)\)$").unwrap();
-    re.captures(&line).map(|cap| {
+    if let Some(cap) = re.captures(line) {
         title = cap[1].to_string();
         series = Some(cap[2].to_string());
         sequence_in_series = Some(cap[3].parse::<u32>().unwrap());
-    });
-    return (title, series, sequence_in_series);
+        return (title, series, sequence_in_series);
+    }
+    (title, series, sequence_in_series)
 }
 enum PasteParseState {
     AwaitNotesAndHighlights,
@@ -101,7 +102,7 @@ pub fn parse_paste<I: BufRead>(vals: &mut I) -> std::io::Result<Vec<Candidate>> 
                 if &line == previous_line {
                     continue;
                 }
-                let authors = line.split(";").map(|s| s.trim().to_string()).collect();
+                let authors = line.split(';').map(|s| s.trim().to_string()).collect();
                 candidates.push(Candidate::new(title, authors));
                 state = PasteParseState::ExpectTitle {
                     previous_line: line,
@@ -152,16 +153,17 @@ mod tests {
                 raw_authors: vec![
                     "O'Malley, Daniel".to_string(),
                     "O'Malley, Daniel".to_string(),
-                ],                
+                ],
             },
             Candidate {
-                raw_title: "The Joy of Abstraction: An Exploration of Math, Category Theory, and Life"
-                    .to_string(),
-                raw_authors: vec!["Cheng, Eugenia".to_string()],                
+                raw_title:
+                    "The Joy of Abstraction: An Exploration of Math, Category Theory, and Life"
+                        .to_string(),
+                raw_authors: vec!["Cheng, Eugenia".to_string()],
             },
             Candidate {
                 raw_title: "Assassin's Apprentice (The Farseer Trilogy, Book 1)".to_string(),
-                raw_authors: vec!["Hobb, Robin".to_string()],                
+                raw_authors: vec!["Hobb, Robin".to_string()],
             },
         ];
     }
