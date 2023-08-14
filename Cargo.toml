@@ -8,6 +8,7 @@ description = "Build and query indexes of books"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+directories = "5.0.1"
 clap = { version = "4.4.3", features = ["derive"] }
 env_logger = "0.10.0"
 linked_hash_set = "0.1.4"

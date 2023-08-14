@@ -15,6 +15,7 @@
 */
 
 use clap::{Parser, Subcommand};
+use directories::ProjectDirs;
 use kcci::ingest;
 
 /// A simple CLI for the kcci library
@@ -33,6 +34,13 @@ enum Commands {
 
 fn main() {
     env_logger::init_from_env("KCCI_LOG");
+    let dirs = ProjectDirs::from("org", "skife", "kcci")
+        // TODO (brianm) maybe just use a temp dir?
+        .unwrap_or_else(|| panic!("unable to find cache and data dirs, please set XDG_*"));
+    let cache_dir = dirs.cache_dir();
+    let data_dir = dirs.data_dir();
+    log::info!("cache:{:?}\tdata:{:?}", cache_dir, data_dir);
+
     let args = Args::parse();
     match args.command {
         Commands::Ingest => {
