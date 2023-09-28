@@ -15,6 +15,7 @@
 */
 
 pub mod ingest;
+pub mod library;
 
 #[cfg(test)]
 mod tests {

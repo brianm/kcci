@@ -32,7 +32,8 @@ enum Commands {
     Ingest,
 }
 
-fn main() {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>>{
     env_logger::init_from_env("KCCI_LOG");
     let dirs = ProjectDirs::from("org", "skife", "kcci")
         // TODO (brianm) maybe just use a temp dir?
@@ -51,4 +52,5 @@ fn main() {
             }
         }
     }
+    Ok(())
 }

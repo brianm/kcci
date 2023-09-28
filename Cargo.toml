@@ -11,9 +11,13 @@ description = "Build and query indexes of books"
 directories = "5.0.1"
 clap = { version = "4.4.3", features = ["derive"] }
 env_logger = "0.10.0"
+http-cache-reqwest = "0.11.1"
 linked_hash_set = "0.1.4"
-log = "0.4.20"
-regex = "1.9.5"
+log = "0.4.19"
+regex = "1.9.1"
+reqwest = { version = "0.11", features = ["json"] }
+tokio = { version = "1", features = ["full"] }
+reqwest-middleware = "0.2.3"
 rust-bert = "0.21.0"
 
 [dev-dependencies]
