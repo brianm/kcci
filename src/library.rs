@@ -1,6 +1,6 @@
+use http_cache_reqwest::{CACacheManager, Cache, CacheMode, HttpCache, HttpCacheOptions};
 use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, Result};
-use http_cache_reqwest::{Cache, CacheMode, CACacheManager, HttpCache, HttpCacheOptions};
 
 pub async fn stuff() -> Result<()> {
     let cache_manager = CACacheManager {
@@ -9,9 +9,9 @@ pub async fn stuff() -> Result<()> {
     };
     let client = ClientBuilder::new(Client::new())
         .with(Cache(HttpCache {
-          mode: CacheMode::Default,
-          manager: cache_manager,
-          options: HttpCacheOptions::default(),
+            mode: CacheMode::Default,
+            manager: cache_manager,
+            options: HttpCacheOptions::default(),
         }))
         .build();
     client
@@ -20,4 +20,3 @@ pub async fn stuff() -> Result<()> {
         .await?;
     Ok(())
 }
-

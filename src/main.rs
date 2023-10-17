@@ -17,6 +17,9 @@
 use clap::{Parser, Subcommand};
 use directories::ProjectDirs;
 use kcci::ingest;
+use rust_bert::pipelines::sentence_embeddings::{
+    SentenceEmbeddingsBuilder, SentenceEmbeddingsModelType,
+};
 
 /// A simple CLI for the kcci library
 ///
@@ -30,10 +33,11 @@ struct Args {
 #[derive(Debug, Subcommand)]
 enum Commands {
     Ingest,
+    Woof,
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>>{
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::init_from_env("KCCI_LOG");
     let dirs = ProjectDirs::from("org", "skife", "kcci")
         // TODO (brianm) maybe just use a temp dir?
@@ -50,6 +54,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>{
             for c in out {
                 println!("{}\t{}", c.title(), c.authors().join(", "));
             }
+        }
+        Commands::Woof => {
+            let model =
+                SentenceEmbeddingsBuilder::remote(SentenceEmbeddingsModelType::AllMiniLmL12V2)
+                    .create_model()
+                    .unwrap();
+
+            let sentences = ["this is an example sentence", "each sentence is converted"];
+
+            let _output = model.encode(&sentences);
         }
     }
     Ok(())
