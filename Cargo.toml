@@ -19,6 +19,7 @@ reqwest = { version = "0.11", features = ["json"] }
 tokio = { version = "1", features = ["full"] }
 reqwest-middleware = "0.2.3"
 rust-bert = "0.21.0"
+url = "2.4.1"
 
 [dev-dependencies]
 pretty_assertions = "1.4.0"

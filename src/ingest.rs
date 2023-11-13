@@ -33,7 +33,7 @@ impl Candidate {
     }
 
     pub fn title(&self) -> String {
-        let (title, _, _) = parse_title(&self.raw_title);
+        let (title, _, _) = parse_title(&self.raw_title);        
         title
     }
 
@@ -158,7 +158,7 @@ mod tests {
 
     #[test]
     fn test_safari() {
-        let mut buf = SAFARI.clone().as_bytes();
+        let mut buf = SAFARI.as_bytes();
         let r = parse_paste(&mut buf);
         assert!(matches!(r, Ok(_)));
 
@@ -168,7 +168,7 @@ mod tests {
 
     #[test]
     fn test_chrome() {
-        let mut buf = CHROME.clone().as_bytes();
+        let mut buf = CHROME.as_bytes();
         let r = parse_paste(&mut buf);
         assert!(matches!(r, Ok(_)));
 
