@@ -33,7 +33,7 @@ impl Candidate {
     }
 
     pub fn title(&self) -> String {
-        let (title, _, _) = parse_title(&self.raw_title);        
+        let (title, _, _) = parse_title(&self.raw_title);
         title
     }
 

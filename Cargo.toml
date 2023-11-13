@@ -20,6 +20,9 @@ tokio = { version = "1", features = ["full"] }
 reqwest-middleware = "0.2.3"
 rust-bert = "0.21.0"
 url = "2.4.1"
+serde_json = "1.0.108"
+serde = { version = "1.0", features = ["derive"] }
+anyhow = "1.0.75"
 
 [dev-dependencies]
 pretty_assertions = "1.4.0"

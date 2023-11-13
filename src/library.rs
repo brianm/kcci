@@ -1,6 +1,8 @@
+use anyhow::Result;
 use http_cache_reqwest::{CACacheManager, Cache, CacheMode, HttpCache, HttpCacheOptions};
 use reqwest::Client;
-use reqwest_middleware::{ClientBuilder, ClientWithMiddleware, Result};
+use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
+use serde::Deserialize;
 
 /**
  * 1. Do a search for the book
@@ -51,7 +53,6 @@ impl OpenLibrary {
     }
 
     pub async fn search(&self, authors: &Vec<String>, title: &String) -> Result<Option<BookData>> {
-
         // First we build the query string for the title and authors
         let mut ser = url::form_urlencoded::Serializer::new(String::new());
         ser.append_pair("title", title);
@@ -59,15 +60,16 @@ impl OpenLibrary {
             ser.append_pair("author", a);
         }
         let query = ser.finish();
-        
+
         let url = format!("http://openlibrary.org/search.json?{}", query);
         let resp = self.client.get(&url).send().await?;
         let body = resp.text().await?;
-        println!("{}", body);
-        Ok(None)
+        let data = serde_json::from_str(&body)?;
+        Ok(data)
     }
 }
 
+#[derive(Deserialize)]
 pub struct BookData {
     title: String,
     authors: Vec<String>,
