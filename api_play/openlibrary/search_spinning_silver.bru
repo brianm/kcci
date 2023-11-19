@@ -1,0 +1,17 @@
+meta {
+  name: search_spinning_silver
+  type: http
+  seq: 1
+}
+
+get {
+  url: http://openlibrary.org/search.json?title=Good Omens&author=Terry Pratchett&author=Neil Gaiman
+  body: none
+  auth: none
+}
+
+query {
+  title: Good Omens
+  author: Terry Pratchett
+  author: Neil Gaiman
+}
