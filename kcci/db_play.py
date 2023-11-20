@@ -1,6 +1,6 @@
 import sqlite3
-import sqlite_vss
-from sentence_transformers import SentenceTransformer, util
+import sqlite_vss # type: ignore
+from sentence_transformers import SentenceTransformer, util # type: ignore
 import sys
 
 if __name__ == '__main__':

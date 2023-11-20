@@ -1,5 +1,5 @@
 
-from sentence_transformers import SentenceTransformer, util
+from sentence_transformers import SentenceTransformer, util # type: ignore
 import sys
 
 def play(n: int, query: str = ''):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import click
+import click # type: ignore
 from typing import List
 
 import book_finder as bf
