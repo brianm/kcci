@@ -2,9 +2,6 @@ import sqlite3
 import sqlite_vss
 from sentence_transformers import SentenceTransformer, util
 import sys
-import numpy as np
-import io
-import torch
 
 
 db = sqlite3.connect(':memory:')
@@ -83,7 +80,8 @@ db.execute('''
         title text
     )''')
 
-model = SentenceTransformer('msmarco-distilbert-base-v4')
+model = SentenceTransformer('msmarco-distilbert-base-tas-b')
+#model = SentenceTransformer('msmarco-distilbert-base-dot-prod-v3')
 id = 0
 for desc in corpus:
     embedding = model.encode(desc)    
@@ -99,14 +97,18 @@ qe = model.encode(query)
 rs = db.execute('''
             with matches as (
                 select rowid, distance 
-                from vss_play where vss_search(desc_embedding, ?)
-                limit 3
+                from vss_play where vss_search(desc_embedding, :query)
+                limit :limit
             )
             select 
                 play.title as title,
                 matches.distance as distance
             from play inner join matches using (rowid)             
             order by distance asc
-        ''', (qe,))
+        ''', 
+        {
+            'query':qe, 
+            'limit': 1
+        })
 for title, distance in rs:
     print(f'{title}: {distance}')
