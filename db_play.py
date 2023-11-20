@@ -12,6 +12,7 @@ db.enable_load_extension(True)
 sqlite_vss.load(db)
 db.enable_load_extension(False)
 
+titles = ['Dune', 'Ender\'s Game', '48 Laws of Power', 'Dory Fantasmagory']
 #Our sentences we like to encode
 corpus = [
     """Set on the desert planet Arrakis, Dune is the story of the boy Paul Atreides, heir to a noble 
@@ -71,26 +72,41 @@ corpus = [
 ]
 
 db.execute('''
-create table vss_play (
-           title text,
-           embedding blob
-)
-''')
+    create virtual table vss_play using vss0 (
+        desc_embedding(768)
+    )
+    ''')
+db.execute('''
+    create table play (
+        rowid integer primary key,
+        title text
+    )''')
 
-embedder = SentenceTransformer('msmarco-distilbert-base-v4')
-titles = ['Dune', 'Ender\'s Game', '48 Laws of Power', 'Dory Fantasmagory']
-for title, embedding in zip(titles, embedder.encode(corpus)):    
-    db.execute('insert into vss_play values (?, ?)', (title, embedding))
+model = SentenceTransformer('msmarco-distilbert-base-v4')
+id = 0
+for desc in corpus:
+    embedding = model.encode(desc)    
+    db.execute('insert into play (rowid, title) values (?, ?)', (id, titles[id]))
+    db.execute('insert into vss_play (rowid, desc_embedding) values (?, ?)', (id, embedding))
+    db.commit()
+    id = id + 1
 
 query = " ".join(sys.argv[1:])
 
 #top_k = min(1, len(corpus))
-qe = embedder.encode(query)
+qe = model.encode(query)
 rs = db.execute('''
-        select title, vss_cosine_similarity(embedding, ?) as score 
-        from vss_play
-        order by score desc
-        limit 1        
+            with matches as (
+                select rowid, distance 
+                from vss_play where vss_search(desc_embedding, ?)
+                limit 2
+            )
+            select 
+                play.title as title,
+                matches.distance as distance
+            from play inner join matches using (rowid)             
+            order by distance desc
+            limit 2
         ''', (qe,))
-for title, score in rs:
-    print(f'{title}: {score}')
+for title, distance in rs:
+    print(f'{title}: {distance}')
