@@ -12,18 +12,6 @@ db.enable_load_extension(True)
 sqlite_vss.load(db)
 db.enable_load_extension(False)
 
-version, = db.execute('select vss_version()').fetchone()
-print(version)
-
-db.execute('''
-create table vss_play (
-           title text,
-           embedding blob
-)
-''')
-
-embedder = SentenceTransformer('msmarco-distilbert-base-v4')
-
 #Our sentences we like to encode
 corpus = [
     """Set on the desert planet Arrakis, Dune is the story of the boy Paul Atreides, heir to a noble 
@@ -81,6 +69,15 @@ corpus = [
         her brother and sister to play with her. But she's too much of a baby for them, so she's left 
         to her own devices."""
 ]
+
+db.execute('''
+create table vss_play (
+           title text,
+           embedding blob
+)
+''')
+
+embedder = SentenceTransformer('msmarco-distilbert-base-v4')
 titles = ['Dune', 'Ender\'s Game', '48 Laws of Power', 'Dory Fantasmagory']
 for title, embedding in zip(titles, embedder.encode(corpus)):    
     db.execute('insert into vss_play values (?, ?)', (title, embedding))
