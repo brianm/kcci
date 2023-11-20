@@ -19,6 +19,7 @@ corpus = [
         family tasked with ruling an inhospitable world where the only thing of value is the "spice" 
         melange, a drug capable of extending life and enhancing consciousness. Coveted across the
         known universe, melange is a prize worth killing for...
+
         When House Atreides is betrayed, the destruction of Paul's family will set the boy on a journey
         toward a destiny greater than he could ever have imagined. And as he evolves into the mysterious
         man known as Muad'Dib, he will bring to fruition humankind's most ancient and unattainable dream.
@@ -99,14 +100,13 @@ rs = db.execute('''
             with matches as (
                 select rowid, distance 
                 from vss_play where vss_search(desc_embedding, ?)
-                limit 2
+                limit 3
             )
             select 
                 play.title as title,
                 matches.distance as distance
             from play inner join matches using (rowid)             
-            order by distance desc
-            limit 2
+            order by distance asc
         ''', (qe,))
 for title, distance in rs:
     print(f'{title}: {distance}')
