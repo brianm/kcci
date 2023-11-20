@@ -12,7 +12,7 @@ def cli():
 @cli.command(name="basics")
 @click.argument('query', nargs=-1)
 def basics(query: List[str]):
-    import ss_play as ss # only import if needed, long load time
+    import kcci.ss_play as ss # only import if needed, long load time
     ss.play(' '.join(query))    
 
 @cli.command()
