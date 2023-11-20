@@ -2,7 +2,7 @@
 from sentence_transformers import SentenceTransformer, util
 import sys
 
-def play(query: str = None):
+def play(n: int, query: str = ''):
     """does some basic playing with sentence transformers"""
     
     embedder = SentenceTransformer('msmarco-distilbert-base-v4')
@@ -67,12 +67,12 @@ def play(query: str = None):
 
     corpus_embeddings = embedder.encode(corpus, convert_to_tensor=True)
 
-    query = " ".join(sys.argv[1:])
+    # query = " ".join(sys.argv[1:])
 
     #top_k = min(1, len(corpus))
     query_embedding = embedder.encode(query, convert_to_tensor=True)
 
-    hits = util.semantic_search(query_embedding, corpus_embeddings, top_k=1)
+    hits = util.semantic_search(query_embedding, corpus_embeddings, top_k=n)
     hits = hits[0]      #Get the hits for the first query
     for hit in hits:
         print("--")
