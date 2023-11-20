@@ -1,6 +1,5 @@
-/tmp
-/.idea
-/.envrc
-/target
-/Cargo.lock
+/dist
 /brian_read.amazon.com_cp.txt
+/tmp
+.envrc
+__pycache__
