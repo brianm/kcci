@@ -1,5 +1,6 @@
 import sqlite3
 import sqlite_vss # type: ignore
+import kcci.db_play as dbp
 
 def test_sqlite_vss_loads():
     db = sqlite3.connect(':memory:')
@@ -10,6 +11,11 @@ def test_sqlite_vss_loads():
     assert version == "v0.1.2"
     db.close()
 
-import kcci.db_play as dbp
 def test_foo():
     assert dbp.foo() == "hello"
+
+def woof() -> set[str]:
+    return {"woof"}
+
+def test_woof():
+    assert woof() == {"woof"}
