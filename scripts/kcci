@@ -4,16 +4,17 @@ import click
 from typing import List
 
 import book_finder as bf
-import ss_play as ss
 
 @click.group()
 def cli():
     pass
 
 @cli.command(name="basics")
+@click.option('--num', '-n', default=1)
 @click.argument('query', nargs=-1)
-def basics(query: List[str]):
-    ss.play(' '.join(query))
+def basics(num: int, query: List[str]):
+    import kcci.ss_play as ss # only import if needed, long load time
+    ss.play(num, ' '.join(query))    
 
 @cli.command()
 @click.option('--author', '-a', multiple=True)
