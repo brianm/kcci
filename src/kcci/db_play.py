@@ -1,13 +1,15 @@
 import sqlite3
-import sqlite_vss # type: ignore
-from sentence_transformers import SentenceTransformer, util # type: ignore
+import sqlite_vss  # type: ignore
+from sentence_transformers import SentenceTransformer, util  # type: ignore
 import sys
+
 
 def foo() -> str:
     return "hello"
 
-if __name__ == '__main__':
-    db = sqlite3.connect(':memory:')
+
+if __name__ == "__main__":
+    db = sqlite3.connect(":memory:")
     db.enable_load_extension(True)
     sqlite_vss.load(db)
     db.enable_load_extension(False)

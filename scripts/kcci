@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
-import click # type: ignore
+import click  # type: ignore
 from typing import List
 
 import kcci.book_finder as bf
+
 
 @click.group()
 def cli():

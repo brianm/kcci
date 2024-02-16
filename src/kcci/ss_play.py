@@ -1,5 +1,4 @@
-
-from sentence_transformers import SentenceTransformer, util # type: ignore
+from sentence_transformers import SentenceTransformer, util  # type: ignore
 import sys
 
 
