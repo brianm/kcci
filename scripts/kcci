@@ -39,6 +39,5 @@ def loc(title: str, author: List[str]):
     click.echo("")
     click.echo(book.description)
 
-
 if __name__ == "__main__":
     cli()
