@@ -22,3 +22,9 @@
   * To save the index: `faiss.write_index(index, filename)`
   * To load the index: `index = faiss.read_index(filename)`
 * [Textual](https://textual.textualize.io) terminal ui library
+* [FastEmbed-rs](https://github.com/anush008/fastembed-rs) way to generate embeddings in rust
+* [sqlite-vec](https://github.com/asg017/sqlite-vec) vector search in sqlite
+* [lancedb](https://lancedb.github.io/lancedb/) embedded search-oriented database
+  * Note need to [statically link lzma-sys](https://github.com/lancedb/lancedb/tree/main/rust/lancedb)
+
+
