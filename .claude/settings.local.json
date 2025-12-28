@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Skill(yatl)",
+      "Bash(yatl:*)",
+      "Bash(yatl block:*)",
+      "Bash(yatl tree:*)",
+      "Bash(yatl log:*)",
+      "Bash(yatl start:*)",
+      "Bash(ls:*)",
+      "Bash(yatl close:*)",
+      "Bash(jj status:*)",
+      "Skill(jjc)",
+      "Bash(jj diff:*)",
+      "Bash(jj describe:*)",
+      "Bash(jj new:*)"
+    ]
+  }
+}

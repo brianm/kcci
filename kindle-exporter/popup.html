@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { width: 320px; padding: 12px; font-family: system-ui, sans-serif; }
+    h3 { margin: 0 0 12px 0; }
+    button { width: 100%; padding: 10px; margin: 4px 0; cursor: pointer; font-size: 14px; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    #status { margin-top: 12px; font-size: 13px; color: #555; min-height: 40px; }
+    .count { font-weight: bold; color: #111; }
+    a { color: #0066cc; }
+  </style>
+</head>
+<body>
+  <h3>Kindle Library Exporter</h3>
+  <p>Navigate to <a href="https://read.amazon.com/kindle-library" target="_blank">read.amazon.com</a> first.</p>
+  <button id="export">Export Library</button>
+  <div id="status"></div>
+  <script src="popup.js"></script>
+</body>
+</html>
