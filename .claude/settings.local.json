@@ -21,7 +21,9 @@
       "Bash(uv run kcci:*)",
       "Bash(uv run python:*)",
       "Bash(uv run pytest:*)",
-      "Bash(uv sync:*)"
+      "Bash(uv sync:*)",
+      "Bash(python3:*)",
+      "Bash(sqlite3:*)"
     ]
   }
 }

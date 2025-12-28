@@ -93,23 +93,19 @@ def import_kindle_json(db: sqlite3.Connection, json_path: Path) -> int:
 
     count = 0
     for book in books:
-        try:
-            db.execute("""
-                INSERT OR IGNORE INTO books (asin, title, authors, cover_url, percent_read, resource_type, origin_type)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (
-                book["asin"],
-                book["title"],
-                json.dumps(book.get("authors", [])),
-                book.get("coverUrl"),
-                book.get("percentageRead", 0),
-                book.get("resourceType"),
-                book.get("originType"),
-            ))
-            if db.total_changes > count:
-                count = db.total_changes
-        except sqlite3.IntegrityError:
-            pass  # Already exists
+        cursor = db.execute("""
+            INSERT OR IGNORE INTO books (asin, title, authors, cover_url, percent_read, resource_type, origin_type)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (
+            book["asin"],
+            book["title"],
+            json.dumps(book.get("authors", [])),
+            book.get("coverUrl"),
+            book.get("percentageRead", 0),
+            book.get("resourceType"),
+            book.get("originType"),
+        ))
+        count += cursor.rowcount
 
     db.commit()
     return count
@@ -187,15 +183,23 @@ def search_semantic(db: sqlite3.Connection, embedding: list[float], limit: int =
     return [dict(row) for row in rows]
 
 
-def get_books_without_metadata(db: sqlite3.Connection, limit: int = 100) -> list[dict]:
+def get_books_without_metadata(db: sqlite3.Connection, limit: Optional[int] = None) -> list[dict]:
     """Get books that haven't been enriched yet."""
-    rows = db.execute("""
-        SELECT b.*
-        FROM books b
-        LEFT JOIN metadata m ON b.asin = m.asin
-        WHERE m.asin IS NULL
-        LIMIT ?
-    """, (limit,)).fetchall()
+    if limit is None:
+        rows = db.execute("""
+            SELECT b.*
+            FROM books b
+            LEFT JOIN metadata m ON b.asin = m.asin
+            WHERE m.asin IS NULL
+        """).fetchall()
+    else:
+        rows = db.execute("""
+            SELECT b.*
+            FROM books b
+            LEFT JOIN metadata m ON b.asin = m.asin
+            WHERE m.asin IS NULL
+            LIMIT ?
+        """, (limit,)).fetchall()
 
     return [dict(row) for row in rows]
 
