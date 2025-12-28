@@ -1,5 +1,5 @@
 import sqlite3
-import sqlite_vss  # type: ignore
+import sqlite_vec  # type: ignore
 from sentence_transformers import SentenceTransformer, util  # type: ignore
 import sys
 
@@ -11,7 +11,7 @@ def foo() -> str:
 if __name__ == "__main__":
     db = sqlite3.connect(":memory:")
     db.enable_load_extension(True)
-    sqlite_vss.load(db)
+    sqlite_vec.load(db)
     db.enable_load_extension(False)
 
     titles = ["Dune", "Ender's Game", "48 Laws of Power", "Dory Fantasmagory"]
