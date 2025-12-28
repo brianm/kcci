@@ -12,6 +12,7 @@ dependencies = [
     "sqlite-vss >= 0.1.2",
     "numpy >= 1.26.2",
     "torch>=2.4.0",
+    "sqlite-vec>=0.1.6",
 ]
 requires-python = ">= 3.11"
 
