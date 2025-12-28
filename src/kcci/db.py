@@ -206,14 +206,14 @@ def get_books_without_metadata(db: sqlite3.Connection, limit: Optional[int] = No
 
 def save_metadata(db: sqlite3.Connection, asin: str, openlibrary_key: str,
                   description: str, subjects: list[str], isbn: Optional[str],
-                  publish_year: Optional[int]) -> None:
+                  publish_year: Optional[int], commit: bool = True) -> None:
     """Save enriched metadata for a book."""
     db.execute("""
         INSERT OR REPLACE INTO metadata (asin, openlibrary_key, description, subjects, isbn, publish_year)
         VALUES (?, ?, ?, ?, ?, ?)
     """, (asin, openlibrary_key, description, json.dumps(subjects), isbn, publish_year))
-    db.commit()
-    update_fts(db, asin)
+    if commit:
+        db.commit()
 
 
 def save_embedding(db: sqlite3.Connection, asin: str, embedding: list[float]) -> None:

@@ -1,6 +1,7 @@
 """Enrich book metadata from OpenLibrary."""
 
 import json
+import re
 import time
 from typing import Optional
 import requests
@@ -9,29 +10,62 @@ import sqlite3
 from . import db
 
 
+def normalize_author_for_search(author: str) -> str:
+    """Convert 'Last, First' to 'First Last' for API search."""
+    if ',' in author:
+        parts = author.split(',', 1)
+        return f"{parts[1].strip()} {parts[0].strip()}"
+    return author.strip()
+
+
+def normalize_title_for_search(title: str) -> str:
+    """Clean up title for API search."""
+    # Remove series info in parens
+    title = re.sub(r'\s*\([^)]*\)', '', title)
+    # Remove subtitle after colon
+    title = re.sub(r':.*$', '', title)
+    return title.strip()
+
+
 def search_openlibrary(title: str, authors: list[str]) -> Optional[dict]:
     """Search OpenLibrary for a book by title and author."""
-    params = {"title": title}
-    if authors:
-        # Use first author for search
-        params["author"] = authors[0]
+    clean_title = normalize_title_for_search(title)
 
+    # Try with author first
+    if authors:
+        author = normalize_author_for_search(authors[0])
+        params = {"title": clean_title, "author": author, "limit": 5}
+
+        try:
+            r = requests.get(
+                "https://openlibrary.org/search.json",
+                params=params,
+                timeout=10,
+            )
+            r.raise_for_status()
+            data = r.json()
+
+            if data.get("docs"):
+                return data["docs"][0]
+        except requests.RequestException:
+            pass
+
+    # Fall back to title-only search
     try:
         r = requests.get(
             "https://openlibrary.org/search.json",
-            params=params,
+            params={"title": clean_title, "limit": 5},
             timeout=10,
         )
         r.raise_for_status()
         data = r.json()
 
-        if not data.get("docs"):
-            return None
-
-        # Return the first match
-        return data["docs"][0]
+        if data.get("docs"):
+            return data["docs"][0]
     except requests.RequestException:
-        return None
+        pass
+
+    return None
 
 
 def get_work_details(work_key: str) -> Optional[dict]:
@@ -84,7 +118,7 @@ def enrich_book(conn: sqlite3.Connection, asin: str, title: str, authors: list[s
     return bool(description)
 
 
-def enrich_batch(conn: sqlite3.Connection, limit: int = 10, delay: float = 1.0,
+def enrich_batch(conn: sqlite3.Connection, limit: Optional[int] = None, delay: float = 1.0,
                  progress_callback=None) -> tuple[int, int]:
     """Enrich a batch of books. Returns (success_count, total_attempted)."""
     books = db.get_books_without_metadata(conn, limit)

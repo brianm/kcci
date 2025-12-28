@@ -6,7 +6,7 @@ from . import book_finder as bf
 from . import db
 from . import enrich
 from . import embed
-from . import ol_dump
+from . import sync as sync_module
 from . import webarchive
 
 
@@ -86,10 +86,10 @@ def search(query: tuple[str, ...], limit: int):
 
 
 @cli.command(name="enrich")
-@click.option("--limit", "-n", default=10, help="Number of books to enrich")
+@click.option("--limit", "-n", default=None, type=int, help="Number of books to enrich (default: all)")
 @click.option("--delay", "-d", default=1.0, help="Delay between API calls (seconds)")
 def enrich_books(limit: int, delay: float):
-    """Enrich books with OpenLibrary metadata."""
+    """Enrich books with OpenLibrary metadata (via API, slow)."""
     conn = db.connect()
     db.init_schema(conn)
 
@@ -140,84 +140,31 @@ def semantic_search(query: tuple[str, ...], limit: int):
         click.echo(f"[{distance:.3f}] {book['title']} by {authors}")
 
 
-@cli.command(name="import-ol-works")
-@click.argument("dump_file", type=click.Path(exists=True, path_type=Path))
-def import_ol_works(dump_file: Path):
-    """Import OpenLibrary works dump for fast enrichment.
+@cli.command()
+@click.argument("webarchive", type=click.Path(exists=True, path_type=Path), required=False)
+@click.option("--delay", "-d", default=1.0, help="Delay between API calls (seconds)")
+def sync(webarchive: Path, delay: float):
+    """Import, enrich, and embed books in one step.
 
-    Download from: https://openlibrary.org/data/ol_dump_works_latest.txt.gz
+    If WEBARCHIVE is provided, imports books from it first.
+    Then enriches any unenriched books via OpenLibrary API.
+    Finally generates embeddings for enriched books.
+
+    Safe to interrupt and resume - picks up where it left off.
     """
     conn = db.connect()
     db.init_schema(conn)
 
-    last_count = [0]
-    def progress(count):
-        if count - last_count[0] >= 100000:
-            click.echo(f"  {count:,} works...")
-            last_count[0] = count
+    def progress(stage: str, message: str):
+        click.echo(f"[{stage}] {message}")
 
-    click.echo(f"Importing works from {dump_file}...")
-    count = ol_dump.import_works_dump(conn, dump_file, progress)
-    click.echo(f"Imported {count:,} works")
+    stats = sync_module.sync(conn, webarchive, delay, progress)
 
-    stats = ol_dump.get_dump_stats(conn)
-    click.echo(f"Works with descriptions: {stats['works_with_descriptions']:,}")
+    click.echo("")
+    click.echo(f"Done! {stats['imported']} imported, {stats['enriched']} enriched, {stats['embedded']} embedded")
 
-
-@cli.command(name="import-ol-authors")
-@click.argument("dump_file", type=click.Path(exists=True, path_type=Path))
-def import_ol_authors(dump_file: Path):
-    """Import OpenLibrary authors dump for author matching.
-
-    Download from: https://openlibrary.org/data/ol_dump_authors_latest.txt.gz
-    """
-    conn = db.connect()
-    db.init_schema(conn)
-
-    last_count = [0]
-    def progress(count):
-        if count - last_count[0] >= 100000:
-            click.echo(f"  {count:,} authors...")
-            last_count[0] = count
-
-    click.echo(f"Importing authors from {dump_file}...")
-    count = ol_dump.import_authors_dump(conn, dump_file, progress)
-    click.echo(f"Imported {count:,} authors")
-
-
-@cli.command(name="enrich-dump")
-@click.option("--limit", "-n", default=None, type=int, help="Number of books to enrich (default: all)")
-def enrich_from_dump(limit: int):
-    """Enrich books from local OpenLibrary dump (fast, no API calls).
-
-    Requires importing dumps first with import-ol-works and import-ol-authors.
-    """
-    conn = db.connect()
-    db.init_schema(conn)
-
-    stats = ol_dump.get_dump_stats(conn)
-    if stats["works"] == 0:
-        click.echo("No OpenLibrary dump imported. Run 'kcci import-ol-works' first.")
-        click.echo("Download: wget https://openlibrary.org/data/ol_dump_works_latest.txt.gz")
-        return
-
-    def progress(current, total, title):
-        click.echo(f"[{current}/{total}] {title[:50]}")
-
-    success, total = ol_dump.enrich_from_dump(conn, limit, progress)
-    click.echo(f"Enriched {success}/{total} books with descriptions")
     s = db.get_stats(conn)
-    click.echo(f"Total enriched: {s['enriched']}/{s['total_books']}")
-
-
-@cli.command(name="ol-stats")
-def ol_stats():
-    """Show OpenLibrary dump statistics."""
-    conn = db.connect()
-    stats = ol_dump.get_dump_stats(conn)
-    click.echo(f"Works:             {stats['works']:,}")
-    click.echo(f"With descriptions: {stats['works_with_descriptions']:,}")
-    click.echo(f"Authors:           {stats['authors']:,}")
+    click.echo(f"Total: {s['total_books']} books, {s['enriched']} enriched, {s['with_embeddings']} with embeddings")
 
 
 @cli.command(name="basics")
