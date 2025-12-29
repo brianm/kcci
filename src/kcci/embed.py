@@ -29,11 +29,11 @@ def get_embedding_text(title: str, authors: list[str], description: str) -> str:
 def get_books_for_embedding(conn: sqlite3.Connection, limit: int | None = None) -> list[dict]:
     """Get enriched books that don't have embeddings yet."""
     query = """
-        SELECT b.asin, b.title, b.authors, m.description
+        SELECT b.asin, b.title, b.authors, COALESCE(m.description, '') as description
         FROM books b
         JOIN metadata m ON b.asin = m.asin
         LEFT JOIN books_vec v ON b.asin = v.asin
-        WHERE m.description != '' AND v.asin IS NULL
+        WHERE v.asin IS NULL
     """
     if limit:
         query += " LIMIT ?"
