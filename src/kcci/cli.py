@@ -51,7 +51,7 @@ def search(query: tuple[str, ...], limit: int):
 @click.argument("query", nargs=-1, required=True)
 @click.option("--limit", "-n", default=10, help="Number of results")
 def semantic_search(query: tuple[str, ...], limit: int):
-    """Semantic search using embeddings (fast ONNX backend)."""
+    """Semantic search using embeddings."""
     conn = db.connect()
     db.init_schema(conn)
 

@@ -27,7 +27,8 @@
       "Bash(time uv run:*)",
       "WebSearch",
       "Bash(uv run python3:*)",
-      "Bash(jj log:*)"
+      "Bash(jj log:*)",
+      "Bash(jj squash:*)"
     ]
   }
 }
