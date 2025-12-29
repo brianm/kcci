@@ -18,12 +18,17 @@ a = Analysis(
     datas=[
         # Include Flask templates
         (str(project_root / 'src' / 'kcci' / 'templates'), 'kcci/templates'),
+        # Include pre-exported ONNX model
+        (str(project_root / 'src-tauri' / 'binaries' / 'onnx-model'), 'onnx-model'),
     ],
     hiddenimports=[
         'kcci',
         'kcci.web',
         'kcci.db',
         'kcci.embed',
+        'kcci.sync',
+        'kcci.enrich',
+        'kcci.webarchive',
         'waitress',
         'flask',
         'jinja2',
@@ -31,10 +36,7 @@ a = Analysis(
         'markdown',
         'sqlite_vec',
         'onnxruntime',
-        'transformers',
         'tokenizers',
-        'sentence_transformers',
-        'torch',
     ],
     hookspath=[],
     hooksconfig={},

@@ -46,7 +46,7 @@ class ProgressTracker:
 def sync(
     conn: sqlite3.Connection,
     webarchive_path: Optional[Path] = None,
-    enrich_delay: float = 1.0,
+    enrich_delay: float = enrich.DEFAULT_DELAY,
     progress_callback: Optional[Callable] = None,
 ) -> dict:
     """
@@ -56,15 +56,15 @@ def sync(
         conn: Database connection
         webarchive_path: Optional path to Safari webarchive to import
         enrich_delay: Delay between OpenLibrary API calls
-        progress_callback: Called with (stage, message) for progress updates
+        progress_callback: Called with (stage, message, current, total) for progress updates
 
     Returns:
         Dict with counts: imported, enriched, embedded
     """
 
-    def report(stage: str, message: str):
+    def report(stage: str, message: str, current: Optional[int] = None, total: Optional[int] = None):
         if progress_callback:
-            progress_callback(stage, message)
+            progress_callback(stage, message, current, total)
 
     stats = {"imported": 0, "enriched": 0, "embedded": 0}
 
@@ -110,8 +110,9 @@ def sync(
             title = book["title"][:40]
             report(
                 "enrich",
-                f"{i + 1}/{total_to_enrich} \"{title}\" "
-                f"({format_time(elapsed)} elapsed, ~{format_time(eta)} remaining)"
+                f"\"{title}\" ({format_time(elapsed)} elapsed, ~{format_time(eta)} remaining)",
+                current=i + 1,
+                total=total_to_enrich
             )
 
             if i < total_to_enrich - 1:
@@ -128,7 +129,7 @@ def sync(
         report("embed", "All enriched books already have embeddings")
     else:
         report("embed", "Loading embedding model...")
-        model = embed.get_model()
+        embed.get_onnx_model()  # Pre-load model
 
         report("embed", f"Generating embeddings for {total_to_embed} books...")
         tracker = ProgressTracker()
@@ -136,7 +137,7 @@ def sync(
         for i, book in enumerate(books_to_embed):
             authors = json.loads(book["authors"])
             text = embed.get_embedding_text(book["title"], authors, book["description"])
-            embedding = model.encode(text).tolist()
+            embedding = embed.embed_text_onnx(text)
             db.save_embedding(conn, book["asin"], embedding)
             stats["embedded"] += 1
 
@@ -144,8 +145,9 @@ def sync(
             title = book["title"][:40]
             report(
                 "embed",
-                f"{i + 1}/{total_to_embed} \"{title}\" "
-                f"({format_time(elapsed)} elapsed, ~{format_time(eta)} remaining)"
+                f"\"{title}\" ({format_time(elapsed)} elapsed, ~{format_time(eta)} remaining)",
+                current=i + 1,
+                total=total_to_embed
             )
 
         report("embed", f"Generated {stats['embedded']} embeddings")

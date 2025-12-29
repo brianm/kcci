@@ -9,3 +9,5 @@
 /.envrc
 __pycache__
 /src-tauri/binaries
+kcci_icon_image.png
+src-tauri/icons/ios/

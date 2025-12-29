@@ -77,26 +77,9 @@ def explore(limit: int):
     db.init_schema(conn)
 
     click.echo("Loading embedding model...", nl=False)
-    tokenizer, model = embed.get_onnx_model()
+    embed.get_onnx_model()  # Pre-load model
     click.echo(" ready!")
     click.echo("Enter queries to search, empty line or Ctrl+C to quit.\n")
-
-    import numpy as np
-
-    def encode(query: str) -> list[float]:
-        inputs = tokenizer(query, return_tensors="np", padding=True, truncation=True)
-        outputs = model(**inputs)
-        attention_mask = inputs["attention_mask"]
-        token_embs = outputs.last_hidden_state
-        input_mask_expanded = np.expand_dims(attention_mask, -1)
-        sum_embs = np.sum(token_embs * input_mask_expanded, axis=1)
-        sum_mask = np.clip(np.sum(input_mask_expanded, axis=1), a_min=1e-9, a_max=None)
-        embedding = (sum_embs / sum_mask)[0]
-        # L2 normalize
-        norm = np.linalg.norm(embedding)
-        if norm > 0:
-            embedding = embedding / norm
-        return embedding.tolist()
 
     while True:
         try:
@@ -104,7 +87,7 @@ def explore(limit: int):
             if not query:
                 break
 
-            query_embedding = encode(query)
+            query_embedding = embed.embed_text_onnx(query)
             results = db.search_semantic(conn, query_embedding, limit)
 
             if not results:

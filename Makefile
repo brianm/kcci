@@ -8,7 +8,7 @@ all: build
 # Build the Python sidecar with PyInstaller
 sidecar: $(SIDECAR)
 
-$(SIDECAR): kcci-server.py kcci-server.spec src/kcci/*.py
+$(SIDECAR): kcci-server.py kcci-server.spec src/kcci/*.py src/kcci/templates/*.html src/kcci/templates/**/*.html
 	@echo "Building sidecar for $(TARGET)..."
 	@mkdir -p src-tauri/binaries
 	uv run pyinstaller --clean --noconfirm kcci-server.spec

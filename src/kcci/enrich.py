@@ -9,6 +9,43 @@ import sqlite3
 
 from . import db
 
+# User agent for API requests
+USER_AGENT = "KCCI/1.0 (https://github.com/brianm/kcci; brianm@skife.org)"
+
+# Default delay between API calls
+DEFAULT_DELAY = 0.25
+
+
+def _make_request(url: str, params: dict = None, max_retries: int = 5) -> Optional[requests.Response]:
+    """Make HTTP request with exponential backoff on 429 errors."""
+    headers = {"User-Agent": USER_AGENT}
+    delay = 1.0  # Initial backoff delay
+
+    for attempt in range(max_retries):
+        try:
+            r = requests.get(url, params=params, headers=headers, timeout=10)
+
+            if r.status_code == 429:
+                # Rate limited - exponential backoff
+                retry_after = r.headers.get("Retry-After")
+                if retry_after:
+                    delay = float(retry_after)
+                time.sleep(delay)
+                delay *= 2  # Exponential backoff
+                continue
+
+            r.raise_for_status()
+            return r
+
+        except requests.RequestException:
+            if attempt < max_retries - 1:
+                time.sleep(delay)
+                delay *= 2
+            else:
+                return None
+
+    return None
+
 
 def normalize_author_for_search(author: str) -> str:
     """Convert 'Last, First' to 'First Last' for API search."""
@@ -36,49 +73,31 @@ def search_openlibrary(title: str, authors: list[str]) -> Optional[dict]:
         author = normalize_author_for_search(authors[0])
         params = {"title": clean_title, "author": author, "limit": 5}
 
-        try:
-            r = requests.get(
-                "https://openlibrary.org/search.json",
-                params=params,
-                timeout=10,
-            )
-            r.raise_for_status()
+        r = _make_request("https://openlibrary.org/search.json", params=params)
+        if r:
             data = r.json()
-
             if data.get("docs"):
                 return data["docs"][0]
-        except requests.RequestException:
-            pass
 
     # Fall back to title-only search
-    try:
-        r = requests.get(
-            "https://openlibrary.org/search.json",
-            params={"title": clean_title, "limit": 5},
-            timeout=10,
-        )
-        r.raise_for_status()
+    r = _make_request(
+        "https://openlibrary.org/search.json",
+        params={"title": clean_title, "limit": 5},
+    )
+    if r:
         data = r.json()
-
         if data.get("docs"):
             return data["docs"][0]
-    except requests.RequestException:
-        pass
 
     return None
 
 
 def get_work_details(work_key: str) -> Optional[dict]:
     """Fetch full work details including description."""
-    try:
-        r = requests.get(
-            f"https://openlibrary.org{work_key}.json",
-            timeout=10,
-        )
-        r.raise_for_status()
+    r = _make_request(f"https://openlibrary.org{work_key}.json")
+    if r:
         return r.json()
-    except requests.RequestException:
-        return None
+    return None
 
 
 def extract_description(work: dict) -> str:
@@ -90,7 +109,7 @@ def extract_description(work: dict) -> str:
 
 
 def enrich_book(conn: sqlite3.Connection, asin: str, title: str, authors: list[str],
-                delay: float = 1.0) -> bool:
+                delay: float = DEFAULT_DELAY) -> bool:
     """Enrich a single book with OpenLibrary metadata. Returns True if successful."""
     # Search for the book
     search_result = search_openlibrary(title, authors)
@@ -118,7 +137,7 @@ def enrich_book(conn: sqlite3.Connection, asin: str, title: str, authors: list[s
     return bool(description)
 
 
-def enrich_batch(conn: sqlite3.Connection, limit: Optional[int] = None, delay: float = 1.0,
+def enrich_batch(conn: sqlite3.Connection, limit: Optional[int] = None, delay: float = DEFAULT_DELAY,
                  progress_callback=None) -> tuple[int, int]:
     """Enrich a batch of books. Returns (success_count, total_attempted)."""
     books = db.get_books_without_metadata(conn, limit)

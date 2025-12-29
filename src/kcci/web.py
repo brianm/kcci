@@ -1,12 +1,16 @@
 """Flask web UI for KCCI."""
 
 import json
+import tempfile
+from pathlib import Path
+
 import markdown
 from markupsafe import Markup
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, Response
 
 from . import db
 from . import embed
+from . import sync as sync_module
 
 app = Flask(__name__)
 
@@ -39,12 +43,21 @@ def index():
     return render_template("index.html", stats=stats)
 
 
+@app.route("/import")
+def import_page():
+    """Import page with instructions and file upload."""
+    conn = db.connect()
+    db.init_schema(conn)
+    stats = db.get_stats(conn)
+    return render_template("import.html", stats=stats)
+
+
 @app.route("/search")
 def search():
     """Search endpoint - returns partial HTML for HTMX."""
     q = request.args.get("q", "").strip()
     mode = request.args.get("mode", "semantic")
-    limit = int(request.args.get("limit", 20))
+    limit = int(request.args.get("limit", 100))
 
     if not q:
         return render_template("partials/results.html", books=[], query="")
@@ -134,6 +147,69 @@ def book_collapse_partial(asin):
         return "Book not found", 404
 
     return render_template("partials/book_collapsed.html", book=book, score=score)
+
+
+@app.route("/sync", methods=["POST"])
+def sync_upload():
+    """Handle webarchive upload and run sync with SSE progress."""
+    import queue
+    import threading
+
+    file = request.files.get("file")
+    if not file:
+        return Response("No file provided", status=400)
+
+    if not file.filename.endswith(".webarchive"):
+        return Response("File must be a .webarchive file", status=400)
+
+    # Save uploaded file to temp location
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".webarchive") as tmp:
+        file.save(tmp.name)
+        temp_path = Path(tmp.name)
+
+    # Queue for passing events from sync thread to generator
+    event_queue = queue.Queue()
+
+    def run_sync():
+        try:
+            conn = db.connect()
+            db.init_schema(conn)
+
+            def progress_callback(stage, message, current=None, total=None):
+                event_queue.put({
+                    "stage": stage,
+                    "message": message,
+                    "current": current,
+                    "total": total,
+                })
+
+            stats = sync_module.sync(
+                conn=conn,
+                webarchive_path=temp_path,
+                progress_callback=progress_callback,
+            )
+
+            # Send completion event
+            event_queue.put({"stage": "complete", "stats": stats})
+
+        except Exception as e:
+            event_queue.put({"stage": "error", "message": str(e)})
+        finally:
+            event_queue.put(None)  # Signal end of stream
+            temp_path.unlink(missing_ok=True)
+
+    # Start sync in background thread
+    thread = threading.Thread(target=run_sync)
+    thread.start()
+
+    def generate():
+        while True:
+            event = event_queue.get()
+            if event is None:
+                break
+            yield f"data: {json.dumps(event)}\n\n"
+
+    return Response(generate(), mimetype="text/event-stream")
 
 
 def run(port: int = 0):

@@ -1,117 +1,87 @@
-"""Generate embeddings for books using sentence-transformers."""
+"""Generate embeddings for books using ONNX runtime."""
 
 import json
 import os
 import sqlite3
-import warnings
+import sys
 from pathlib import Path
 
 import numpy as np  # type: ignore
 
 from . import db
 
-# Suppress FutureWarning from transformers about tokenization
-warnings.filterwarnings("ignore", message=".*clean_up_tokenization_spaces.*")
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
 # Model optimized for semantic search - trained on 215M Q&A pairs
 MODEL_NAME = "multi-qa-mpnet-base-cos-v1"
 
+# Cache loaded model to avoid reloading for each embedding
+_cached_model = None
+
 
 def get_onnx_cache_dir() -> Path:
-    """Get the ONNX model cache directory."""
+    """Get the ONNX model directory.
+
+    Checks for bundled model first (PyInstaller), then falls back to user cache.
+    """
+    # Check for bundled model (PyInstaller)
+    if getattr(sys, 'frozen', False):
+        return Path(sys._MEIPASS) / "onnx-model"
+    # Check for KCCI_DATA_DIR override
     data_dir = os.environ.get("KCCI_DATA_DIR")
     if data_dir:
         return Path(data_dir) / "onnx-model"
+    # Fall back to user cache
     return Path.home() / ".kcci" / "onnx-model"
 
 
-def get_model():
-    """Load the sentence transformer model (for batch operations)."""
-    from sentence_transformers import SentenceTransformer  # type: ignore
-    return SentenceTransformer(MODEL_NAME)
-
-
 def get_onnx_model():
-    """Load ONNX model for fast query encoding. Returns (tokenizer, model).
+    """Load ONNX model for encoding. Returns (tokenizer, session).
 
-    Uses optimum/transformers if available, otherwise falls back to lightweight
-    onnxruntime-only approach.
+    Uses lightweight tokenizers + onnxruntime (no torch needed).
+    Model must be pre-exported and bundled with the app.
     """
-    if not ONNX_CACHE_DIR.exists():
-        # Need transformers/optimum to export the model initially
-        from optimum.onnxruntime import ORTModelForFeatureExtraction  # type: ignore
-        from transformers import AutoTokenizer  # type: ignore
+    global _cached_model
+    if _cached_model is not None:
+        return _cached_model
 
-        ONNX_CACHE_DIR.parent.mkdir(parents=True, exist_ok=True)
-        hf_model = f"sentence-transformers/{MODEL_NAME}"
-        tokenizer = AutoTokenizer.from_pretrained(hf_model)
-        model = ORTModelForFeatureExtraction.from_pretrained(hf_model, export=True)
-        model.save_pretrained(ONNX_CACHE_DIR)
-        tokenizer.save_pretrained(ONNX_CACHE_DIR)
-        return tokenizer, model
-
-    # Try lightweight approach first (no torch needed)
-    try:
-        return _get_onnx_model_lightweight()
-    except Exception:
-        # Fall back to transformers if lightweight fails
-        from optimum.onnxruntime import ORTModelForFeatureExtraction  # type: ignore
-        from transformers import AutoTokenizer  # type: ignore
-
-        tokenizer = AutoTokenizer.from_pretrained(ONNX_CACHE_DIR)
-        model = ORTModelForFeatureExtraction.from_pretrained(ONNX_CACHE_DIR)
-        return tokenizer, model
-
-
-def _get_onnx_model_lightweight():
-    """Load ONNX model using only tokenizers + onnxruntime (no torch)."""
     import onnxruntime as ort  # type: ignore
     from tokenizers import Tokenizer  # type: ignore
 
-    tokenizer_path = ONNX_CACHE_DIR / "tokenizer.json"
-    model_path = ONNX_CACHE_DIR / "model.onnx"
+    cache_dir = get_onnx_cache_dir()
+    tokenizer_path = cache_dir / "tokenizer.json"
+    model_path = cache_dir / "model.onnx"
 
     if not tokenizer_path.exists() or not model_path.exists():
-        raise FileNotFoundError("ONNX model not cached")
+        raise FileNotFoundError(
+            f"ONNX model not found at {cache_dir}. "
+            "Model must be pre-exported and bundled with the app."
+        )
 
     tokenizer = Tokenizer.from_file(str(tokenizer_path))
     session = ort.InferenceSession(str(model_path))
-    return tokenizer, session
+    _cached_model = (tokenizer, session)
+    return _cached_model
 
 
-def embed_query_onnx(query: str) -> list[float]:
-    """Generate embedding using fast ONNX backend."""
-    tokenizer, model = get_onnx_model()
+def embed_text_onnx(text: str) -> list[float]:
+    """Generate embedding for any text using ONNX backend."""
+    tokenizer, session = get_onnx_model()
 
-    # Check if we got the lightweight model (onnxruntime session)
-    if hasattr(model, 'run'):
-        # Lightweight path: tokenizers + onnxruntime
-        encoded = tokenizer.encode(query)
-        input_ids = np.array([encoded.ids], dtype=np.int64)
-        attention_mask = np.array([encoded.attention_mask], dtype=np.int64)
+    # Tokenize
+    encoded = tokenizer.encode(text)
+    input_ids = np.array([encoded.ids], dtype=np.int64)
+    attention_mask = np.array([encoded.attention_mask], dtype=np.int64)
 
-        outputs = model.run(None, {
-            'input_ids': input_ids,
-            'attention_mask': attention_mask,
-        })
-        token_embs = outputs[0]  # Shape: [1, seq_len, hidden_size]
-    else:
-        # Full path: transformers/optimum
-        inputs = tokenizer(query, return_tensors="np", padding=True, truncation=True)
-        outputs = model(**inputs)
-        attention_mask = inputs["attention_mask"]
-        token_embs = outputs.last_hidden_state
-        input_ids = None  # Not needed for this path
+    # Run inference
+    outputs = session.run(None, {
+        'input_ids': input_ids,
+        'attention_mask': attention_mask,
+    })
+    token_embs = outputs[0]  # Shape: [1, seq_len, hidden_size]
 
     # Mean pooling (matching sentence-transformers)
-    if hasattr(model, 'run'):
-        # Lightweight path
-        input_mask_expanded = np.expand_dims(attention_mask, -1)
-    else:
-        # Full path
-        input_mask_expanded = np.expand_dims(attention_mask, -1)
-
+    input_mask_expanded = np.expand_dims(attention_mask, -1)
     sum_embs = np.sum(token_embs * input_mask_expanded, axis=1)
     sum_mask = np.clip(np.sum(input_mask_expanded, axis=1), a_min=1e-9, a_max=None)
     embedding = (sum_embs / sum_mask)[0]
@@ -122,6 +92,10 @@ def embed_query_onnx(query: str) -> list[float]:
         embedding = embedding / norm
 
     return embedding.tolist()
+
+
+# Alias for backward compatibility
+embed_query_onnx = embed_text_onnx
 
 
 def get_embedding_text(title: str, authors: list[str], description: str) -> str:
@@ -160,22 +134,16 @@ def embed_batch(conn: sqlite3.Connection, limit: int = 100,
     if not books:
         return 0
 
-    model = get_model()
+    # Pre-load model once for the batch
+    get_onnx_model()
 
     for i, book in enumerate(books):
         authors = json.loads(book["authors"])
         text = get_embedding_text(book["title"], authors, book["description"])
-        embedding = model.encode(text).tolist()
+        embedding = embed_text_onnx(text)
         db.save_embedding(conn, book["asin"], embedding)
 
         if progress_callback:
             progress_callback(i + 1, len(books), book["title"])
 
     return len(books)
-
-
-def embed_query(query: str, model=None) -> list[float]:
-    """Generate embedding for a search query."""
-    if model is None:
-        model = get_model()
-    return model.encode(query).tolist()
