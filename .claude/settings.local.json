@@ -24,7 +24,8 @@
       "Bash(uv sync:*)",
       "Bash(python3:*)",
       "Bash(sqlite3:*)",
-      "Bash(time uv run:*)"
+      "Bash(time uv run:*)",
+      "WebSearch"
     ]
   }
 }

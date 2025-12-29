@@ -10,8 +10,8 @@ from . import db
 # Suppress FutureWarning from transformers about tokenization
 warnings.filterwarnings("ignore", message=".*clean_up_tokenization_spaces.*")
 
-# Model for semantic search - good balance of quality and speed
-MODEL_NAME = "msmarco-distilbert-base-tas-b"
+# Model optimized for semantic search - trained on 215M Q&A pairs
+MODEL_NAME = "multi-qa-mpnet-base-cos-v1"
 
 
 def get_model() -> SentenceTransformer:
