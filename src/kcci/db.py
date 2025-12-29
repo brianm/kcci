@@ -8,7 +8,16 @@ import sqlite_vec  # type: ignore
 
 
 def get_db_path() -> Path:
-    """Get the default database path."""
+    """Get the default database path.
+
+    Uses KCCI_DATA_DIR environment variable if set (desktop app mode),
+    otherwise falls back to ~/.kcci (CLI mode).
+    """
+    import os
+
+    data_dir = os.environ.get("KCCI_DATA_DIR")
+    if data_dir:
+        return Path(data_dir) / "books.db"
     return Path.home() / ".kcci" / "books.db"
 
 

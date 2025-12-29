@@ -3,7 +3,9 @@
 .envrc
 /.vscode
 /dist
+/build
 /brian_read.amazon.com_cp.txt
 /tmp
 /.envrc
 __pycache__
+/src-tauri/binaries

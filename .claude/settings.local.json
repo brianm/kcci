@@ -33,7 +33,16 @@
       "Bash(timeout 3 uv run:*)",
       "Bash(lsof:*)",
       "Bash(xargs kill -9)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "WebFetch(domain:v2.tauri.app)",
+      "WebFetch(domain:github.com)",
+      "Bash(rustc:*)",
+      "Bash(chmod:*)",
+      "Bash(cargo tauri:*)",
+      "Bash(./scripts/build-sidecar.sh:*)",
+      "Bash(open:*)",
+      "Bash(log show:*)",
+      "Bash(make:*)"
     ]
   }
 }
