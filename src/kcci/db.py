@@ -242,3 +242,26 @@ def get_stats(db: sqlite3.Connection) -> dict:
         "enriched": enriched,
         "with_embeddings": with_embeddings,
     }
+
+
+def get_all_books(db: sqlite3.Connection, limit: int = 50, offset: int = 0) -> list[dict]:
+    """Get paginated list of all books."""
+    rows = db.execute("""
+        SELECT b.*, m.description, m.subjects, m.publish_year
+        FROM books b
+        LEFT JOIN metadata m ON b.asin = m.asin
+        ORDER BY b.title
+        LIMIT ? OFFSET ?
+    """, (limit, offset)).fetchall()
+    return [dict(row) for row in rows]
+
+
+def get_book_by_asin(db: sqlite3.Connection, asin: str) -> Optional[dict]:
+    """Get a single book with full metadata."""
+    row = db.execute("""
+        SELECT b.*, m.description, m.subjects, m.publish_year, m.isbn, m.openlibrary_key
+        FROM books b
+        LEFT JOIN metadata m ON b.asin = m.asin
+        WHERE b.asin = ?
+    """, (asin,)).fetchone()
+    return dict(row) if row else None

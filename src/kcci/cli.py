@@ -149,5 +149,14 @@ def sync(webarchive: Path, delay: float):
     click.echo(f"Total: {s['total_books']} books, {s['enriched']} enriched, {s['with_embeddings']} with embeddings")
 
 
+@cli.command()
+@click.option("--port", "-p", default=5000, help="Port to run on")
+def serve(port: int):
+    """Start the web UI."""
+    from . import web
+    click.echo(f"Starting KCCI web UI at http://localhost:{port}")
+    web.run(port=port)
+
+
 if __name__ == "__main__":
     cli()

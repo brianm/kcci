@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Browse - KCCI{% endblock %}
+
+{% block content %}
+<h2 style="margin-bottom: 1rem;">All Books ({{ stats.total_books }})</h2>
+
+{% for book in books %}
+<div class="book-card">
+    <a href="/book/{{ book.asin }}">
+        <div class="book-title">{{ book.title }}</div>
+        <div class="book-author">{{ book.authors|authors }}</div>
+    </a>
+</div>
+{% endfor %}
+
+{% if total_pages > 1 %}
+<div class="pagination">
+    {% if page > 1 %}
+    <a href="/books?page={{ page - 1 }}">Previous</a>
+    {% endif %}
+
+    {% for p in range(1, total_pages + 1) %}
+        {% if p == page %}
+        <a href="/books?page={{ p }}" class="current">{{ p }}</a>
+        {% elif p <= 3 or p > total_pages - 2 or (p >= page - 1 and p <= page + 1) %}
+        <a href="/books?page={{ p }}">{{ p }}</a>
+        {% elif p == 4 and page > 5 %}
+        <span style="padding: 0.5rem;">...</span>
+        {% elif p == total_pages - 2 and page < total_pages - 4 %}
+        <span style="padding: 0.5rem;">...</span>
+        {% endif %}
+    {% endfor %}
+
+    {% if page < total_pages %}
+    <a href="/books?page={{ page + 1 }}">Next</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

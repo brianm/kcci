@@ -14,6 +14,8 @@ dependencies = [
     "sqlite-vec>=0.1.6",
     "optimum[onnxruntime]>=2.1.0",
     "onnxruntime>=1.23.2",
+    "flask>=3.1.2",
+    "markdown>=3.10",
 ]
 requires-python = ">= 3.11"
 
