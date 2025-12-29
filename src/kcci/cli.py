@@ -1,13 +1,23 @@
+import json
+
 import click  # type: ignore
 from pathlib import Path
 from typing import List
 
 from . import book_finder as bf
+
+
 from . import db
 from . import enrich
 from . import embed
 from . import sync as sync_module
 from . import webarchive
+
+
+def format_authors(authors_json: str) -> str:
+    """Format authors JSON array as readable string."""
+    authors = json.loads(authors_json)
+    return ", ".join(authors)
 
 
 @click.group()
@@ -81,7 +91,7 @@ def search(query: tuple[str, ...], limit: int):
         click.echo("No results found.")
         return
     for book in results:
-        authors = book["authors"]
+        authors = format_authors(book["authors"])
         click.echo(f"{book['title']} by {authors}")
 
 
@@ -135,7 +145,7 @@ def semantic_search(query: tuple[str, ...], limit: int):
         return
 
     for book in results:
-        authors = book["authors"]
+        authors = format_authors(book["authors"])
         distance = book.get("distance", "?")
         click.echo(f"[{distance:.3f}] {book['title']} by {authors}")
 
