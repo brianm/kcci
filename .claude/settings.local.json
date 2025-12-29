@@ -29,7 +29,11 @@
       "Bash(uv run python3:*)",
       "Bash(jj log:*)",
       "Bash(jj squash:*)",
-      "Bash(timeout 5 uv run:*)"
+      "Bash(timeout 5 uv run:*)",
+      "Bash(timeout 3 uv run:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill -9)",
+      "Bash(curl:*)"
     ]
   }
 }

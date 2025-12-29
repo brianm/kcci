@@ -150,11 +150,10 @@ def sync(webarchive: Path, delay: float):
 
 
 @cli.command()
-@click.option("--port", "-p", default=5000, help="Port to run on")
+@click.option("--port", "-p", default=0, help="Port to run on (0 for random)")
 def serve(port: int):
     """Start the web UI."""
     from . import web
-    click.echo(f"Starting KCCI web UI at http://localhost:{port}")
     web.run(port=port)
 
 

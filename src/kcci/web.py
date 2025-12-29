@@ -136,6 +136,16 @@ def book_collapse_partial(asin):
     return render_template("partials/book_collapsed.html", book=book, score=score)
 
 
-def run(port: int = 5000, debug: bool = True):
-    """Run the Flask development server."""
-    app.run(port=port, debug=debug)
+def run(port: int = 0):
+    """Run the web server. Port 0 means pick a random available port."""
+    import socket
+    from waitress import serve
+
+    if port == 0:
+        # Find a random available port
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(("127.0.0.1", 0))
+            port = s.getsockname()[1]
+
+    print(f"http://localhost:{port}", flush=True)
+    serve(app, host="127.0.0.1", port=port)

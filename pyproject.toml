@@ -16,6 +16,7 @@ dependencies = [
     "onnxruntime>=1.23.2",
     "flask>=3.1.2",
     "markdown>=3.10",
+    "waitress>=3.0.2",
 ]
 requires-python = ">= 3.11"
 
