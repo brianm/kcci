@@ -51,12 +51,12 @@ def search(query: tuple[str, ...], limit: int):
 @click.argument("query", nargs=-1, required=True)
 @click.option("--limit", "-n", default=10, help="Number of results")
 def semantic_search(query: tuple[str, ...], limit: int):
-    """Semantic search using embeddings."""
+    """Semantic search using embeddings (fast ONNX backend)."""
     conn = db.connect()
     db.init_schema(conn)
 
     query_text = " ".join(query)
-    query_embedding = embed.embed_query(query_text)
+    query_embedding = embed.embed_query_onnx(query_text)
     results = db.search_semantic(conn, query_embedding, limit)
 
     if not results:
@@ -67,6 +67,59 @@ def semantic_search(query: tuple[str, ...], limit: int):
         authors = format_authors(book["authors"])
         distance = book.get("distance", "?")
         click.echo(f"[{distance:.3f}] {book['title']} by {authors}")
+
+
+@cli.command(name="explore")
+@click.option("--limit", "-n", default=10, help="Number of results")
+def explore(limit: int):
+    """Interactive semantic search - load model once, search repeatedly."""
+    conn = db.connect()
+    db.init_schema(conn)
+
+    click.echo("Loading embedding model...", nl=False)
+    tokenizer, model = embed.get_onnx_model()
+    click.echo(" ready!")
+    click.echo("Enter queries to search, empty line or Ctrl+C to quit.\n")
+
+    import numpy as np
+
+    def encode(query: str) -> list[float]:
+        inputs = tokenizer(query, return_tensors="np", padding=True, truncation=True)
+        outputs = model(**inputs)
+        attention_mask = inputs["attention_mask"]
+        token_embs = outputs.last_hidden_state
+        input_mask_expanded = np.expand_dims(attention_mask, -1)
+        sum_embs = np.sum(token_embs * input_mask_expanded, axis=1)
+        sum_mask = np.clip(np.sum(input_mask_expanded, axis=1), a_min=1e-9, a_max=None)
+        embedding = (sum_embs / sum_mask)[0]
+        # L2 normalize
+        norm = np.linalg.norm(embedding)
+        if norm > 0:
+            embedding = embedding / norm
+        return embedding.tolist()
+
+    while True:
+        try:
+            query = input("search> ").strip()
+            if not query:
+                break
+
+            query_embedding = encode(query)
+            results = db.search_semantic(conn, query_embedding, limit)
+
+            if not results:
+                click.echo("No results found.\n")
+                continue
+
+            for book in results:
+                authors = format_authors(book["authors"])
+                distance = book.get("distance", "?")
+                click.echo(f"  [{distance:.3f}] {book['title']} by {authors}")
+            click.echo()
+
+        except (KeyboardInterrupt, EOFError):
+            click.echo("\nBye!")
+            break
 
 
 @cli.command()

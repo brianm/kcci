@@ -25,7 +25,9 @@
       "Bash(python3:*)",
       "Bash(sqlite3:*)",
       "Bash(time uv run:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(uv run python3:*)",
+      "Bash(jj log:*)"
     ]
   }
 }
