@@ -1,10 +1,13 @@
 <script lang="ts">
+  import { createEventDispatcher } from 'svelte';
   import type { Book } from '../lib/api';
 
   export let book: Book;
   export let showScore = false;
+  export let selected = false;
+  export let expanded = false;
 
-  let expanded = false;
+  const dispatch = createEventDispatcher();
 
   function getScore(): number {
     if (book.distance !== null) {
@@ -17,10 +20,14 @@
     return book.authors.join('; ');
   }
 
+  function handleClick() {
+    dispatch('click');
+  }
+
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      expanded = !expanded;
+      dispatch('click');
     }
   }
 </script>
@@ -28,10 +35,11 @@
 <div
   class="book-card"
   class:expanded
-  on:click={() => expanded = !expanded}
+  class:selected
+  on:click={handleClick}
   on:keydown={handleKeydown}
   role="button"
-  tabindex="0"
+  tabindex="-1"
 >
   <div class="book-header">
     <div class="book-title">
@@ -88,8 +96,10 @@
     text-align: left;
   }
 
-  .book-card:hover {
+  .book-card:hover,
+  .book-card.selected {
     border-color: var(--accent);
+    background: var(--accent-light);
   }
 
   .book-card.expanded {
