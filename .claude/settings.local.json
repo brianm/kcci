@@ -62,7 +62,10 @@
       "Bash(git rev-list:*)",
       "Bash(git cat-file:*)",
       "Bash(sort:*)",
-      "Bash(git count-objects:*)"
+      "Bash(git count-objects:*)",
+      "Bash(cargo license:*)",
+      "Bash(cargo tree:*)",
+      "Bash(npx license-checker:*)"
     ]
   }
 }

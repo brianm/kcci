@@ -34,7 +34,8 @@
       "icons/icon.ico"
     ],
     "resources": [
-      "binaries/onnx-model/*"
+      "binaries/onnx-model/*",
+      "../THIRD_PARTY_LICENSES.txt"
     ],
     "macOS": {
       "minimumSystemVersion": "10.15"

@@ -1,0 +1,146 @@
+THIRD-PARTY LICENSES
+====================
+
+KCCI (Keith's Card Catalog Index) incorporates third-party software and
+models. This file lists those components and their licenses.
+
+
+================================================================================
+RUST DEPENDENCIES
+================================================================================
+
+The following Rust crates are used in this project:
+
+Package                  License
+------------------------ -----------------------
+tauri                    Apache-2.0 OR MIT
+tauri-plugin-log         Apache-2.0 OR MIT
+tauri-plugin-shell       Apache-2.0 OR MIT
+rusqlite                 MIT
+sqlite-vec               MIT OR Apache-2.0
+ort (ONNX Runtime)       MIT OR Apache-2.0
+tokenizers               Apache-2.0
+ndarray                  MIT OR Apache-2.0
+reqwest                  MIT OR Apache-2.0
+plist                    MIT
+regex                    MIT OR Apache-2.0
+serde                    MIT OR Apache-2.0
+serde_json               MIT OR Apache-2.0
+thiserror                MIT OR Apache-2.0
+tokio                    MIT
+log                      MIT OR Apache-2.0
+urlencoding              MIT
+
+
+================================================================================
+JAVASCRIPT DEPENDENCIES
+================================================================================
+
+Package                  License
+------------------------ -----------------------
+@tauri-apps/api          Apache-2.0 OR MIT
+@tauri-apps/plugin-dialog MIT OR Apache-2.0
+@tauri-apps/plugin-shell MIT OR Apache-2.0
+svelte                   MIT
+vite                     MIT
+marked                   MIT
+
+
+================================================================================
+ONNX RUNTIME
+================================================================================
+
+ONNX Runtime
+Copyright (c) Microsoft Corporation
+
+Licensed under the MIT License.
+
+https://github.com/microsoft/onnxruntime
+
+
+================================================================================
+EMBEDDING MODEL: all-MiniLM-L6-v2
+================================================================================
+
+Model: sentence-transformers/all-MiniLM-L6-v2
+Source: https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
+License: Apache-2.0
+
+IMPORTANT NOTICE: While the model itself is released under Apache-2.0, the
+training data includes datasets (MS MARCO, GooAQ) that may have restrictions
+on commercial use. Users should evaluate their own use case for compliance.
+
+Citation:
+@inproceedings{reimers-2019-sentence-bert,
+    title = "Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks",
+    author = "Reimers, Nils and Gurevych, Iryna",
+    booktitle = "Proceedings of the 2019 Conference on Empirical Methods in
+                 Natural Language Processing",
+    year = "2019",
+    publisher = "Association for Computational Linguistics",
+    url = "https://arxiv.org/abs/1908.10084",
+}
+
+
+================================================================================
+MIT LICENSE
+================================================================================
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+================================================================================
+APACHE LICENSE, VERSION 2.0
+================================================================================
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+
+================================================================================
+TAURI
+================================================================================
+
+Tauri
+Copyright (c) 2019-2024 The Tauri Programme in the Commons Conservancy
+
+Licensed under the Apache License, Version 2.0 or MIT License, at your option.
+
+https://github.com/tauri-apps/tauri
+
+
+================================================================================
+SVELTE
+================================================================================
+
+Svelte
+Copyright (c) 2016-2024 Rich Harris and contributors
+
+Licensed under the MIT License.
+
+https://github.com/sveltejs/svelte
