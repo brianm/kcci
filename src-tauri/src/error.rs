@@ -23,9 +23,6 @@ pub enum KcciError {
 
     #[error("JSON error: {0}")]
     Json(#[from] serde_json::Error),
-
-    #[error("Not found: {0}")]
-    NotFound(String),
 }
 
 impl From<tokenizers::Error> for KcciError {

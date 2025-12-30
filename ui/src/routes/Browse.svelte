@@ -5,24 +5,55 @@
 
   export let stats: Stats | null = null;
 
-  let data: PaginatedBooks | null = null;
+  let books: Book[] = [];
+  let currentPage = 0;
+  let totalPages = 1;
   let loading = false;
   let error: string | null = null;
+  let selectedIndex = -1;
+  let expandedAsin: string | null = null;
+  let sentinel: HTMLElement;
 
   onMount(() => {
-    loadPage(1);
+    loadMore();
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loading && currentPage < totalPages) {
+          loadMore();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
   });
 
-  async function loadPage(page: number) {
+  async function loadMore() {
+    if (loading || currentPage >= totalPages) return;
+
     loading = true;
     error = null;
     try {
-      data = await listBooks(page, 50);
+      const data = await listBooks(currentPage + 1, 50);
+      books = [...books, ...data.books];
+      currentPage = data.page;
+      totalPages = data.total_pages;
     } catch (e) {
       error = String(e);
     } finally {
       loading = false;
     }
+  }
+
+  function handleCardClick(index: number, asin: string) {
+    selectedIndex = index;
+    expandedAsin = expandedAsin === asin ? null : asin;
+  }
+
+  function handleCardMouseEnter(index: number) {
+    selectedIndex = index;
   }
 </script>
 
@@ -44,29 +75,29 @@
     </div>
   {/if}
 
-  {#if loading && !data}
-    <p class="loading">Loading...</p>
-  {:else if error}
+  {#if error}
     <p class="error">{error}</p>
-  {:else if data}
-    <div class="books">
-      {#each data.books as book (book.asin)}
-        <BookCard {book} />
-      {/each}
-    </div>
-
-    {#if data.total_pages > 1}
-      <div class="pagination">
-        {#if data.page > 1}
-          <a href="javascript:void(0)" on:click={() => loadPage(data!.page - 1)}>Previous</a>
-        {/if}
-        <span>Page {data.page} of {data.total_pages}</span>
-        {#if data.page < data.total_pages}
-          <a href="javascript:void(0)" on:click={() => loadPage(data!.page + 1)}>Next</a>
-        {/if}
-      </div>
-    {/if}
   {/if}
+
+  <div class="books">
+    {#each books as book, index (book.asin)}
+      <BookCard
+        {book}
+        selected={index === selectedIndex}
+        expanded={expandedAsin === book.asin}
+        on:click={() => handleCardClick(index, book.asin)}
+        on:mouseenter={() => handleCardMouseEnter(index)}
+      />
+    {/each}
+  </div>
+
+  <div bind:this={sentinel} class="sentinel">
+    {#if loading}
+      <p class="loading">Loading...</p>
+    {:else if currentPage >= totalPages && books.length > 0}
+      <p class="end">End of library</p>
+    {/if}
+  </div>
 </div>
 
 <style>
@@ -105,30 +136,13 @@
     color: #dc2626;
   }
 
-  .pagination {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    margin-top: 2rem;
-    align-items: center;
+  .sentinel {
+    text-align: center;
+    padding: 2rem;
   }
 
-  .pagination a {
-    padding: 0.6rem 1.25rem;
-    background: var(--bg-light);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text);
-    text-decoration: none;
-    transition: border-color 0.15s;
-  }
-
-  .pagination a:hover {
-    border-color: var(--accent);
-  }
-
-  .pagination span {
+  .end {
     color: var(--text-dim);
-    padding: 0 1rem;
+    font-size: 0.9rem;
   }
 </style>

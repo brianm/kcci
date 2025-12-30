@@ -56,7 +56,13 @@
       "Bash(cargo build:*)",
       "Bash(jj show:*)",
       "Bash(jj file show:*)",
-      "Bash(jj file list:*)"
+      "Bash(jj file list:*)",
+      "Bash(find:*)",
+      "Bash(xargs:*)",
+      "Bash(git rev-list:*)",
+      "Bash(git cat-file:*)",
+      "Bash(sort:*)",
+      "Bash(git count-objects:*)"
     ]
   }
 }

@@ -78,8 +78,13 @@
     }
   }
 
-  function handleCardClick(asin: string) {
+  function handleCardClick(index: number, asin: string) {
+    selectedIndex = index;
     expandedAsin = expandedAsin === asin ? null : asin;
+  }
+
+  function handleCardMouseEnter(index: number) {
+    selectedIndex = index;
   }
 </script>
 
@@ -111,7 +116,8 @@
       showScore={mode === 'semantic'}
       selected={index === selectedIndex}
       expanded={expandedAsin === book.asin}
-      on:click={() => handleCardClick(book.asin)}
+      on:click={() => handleCardClick(index, book.asin)}
+      on:mouseenter={() => handleCardMouseEnter(index)}
     />
   {/each}
 </div>

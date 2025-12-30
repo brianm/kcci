@@ -10,13 +10,6 @@ use crate::sync::{self, SyncStats};
 /// Thread-safe database wrapper for Tauri state
 pub struct DbState(pub Mutex<Database>);
 
-/// Search result with book data
-#[derive(serde::Serialize)]
-pub struct SearchResult {
-    pub books: Vec<BookWithMeta>,
-    pub total: usize,
-}
-
 /// Pagination info
 #[derive(serde::Serialize)]
 pub struct PaginatedBooks {

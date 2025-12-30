@@ -1,5 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { open } from '@tauri-apps/plugin-shell';
+  import { marked } from 'marked';
   import type { Book } from '../lib/api';
 
   export let book: Book;
@@ -8,6 +10,22 @@
   export let expanded = false;
 
   const dispatch = createEventDispatcher();
+
+  async function openExternal(url: string, event: MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    await open(url);
+  }
+
+  async function handleDescriptionClick(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    const anchor = target.closest('a');
+    if (anchor?.href) {
+      event.preventDefault();
+      event.stopPropagation();
+      await open(anchor.href);
+    }
+  }
 
   function getScore(): number {
     if (book.distance !== null) {
@@ -18,6 +36,11 @@
 
   function formatAuthors(): string {
     return book.authors.join('; ');
+  }
+
+  function renderDescription(): string {
+    if (!book.description) return '';
+    return marked.parse(book.description, { async: false }) as string;
   }
 
   function handleClick() {
@@ -38,6 +61,7 @@
   class:selected
   on:click={handleClick}
   on:keydown={handleKeydown}
+  on:mouseenter={() => dispatch('mouseenter')}
   role="button"
   tabindex="-1"
 >
@@ -54,7 +78,7 @@
   {#if expanded}
     <div class="book-details">
       {#if book.description}
-        <div class="book-description">{@html book.description}</div>
+        <div class="book-description" on:click={handleDescriptionClick}>{@html renderDescription()}</div>
       {/if}
 
       {#if book.subjects.length > 0}
@@ -73,9 +97,7 @@
         {#if book.openlibrary_key}
           <a
             href="https://openlibrary.org{book.openlibrary_key}"
-            target="_blank"
-            rel="noopener"
-            on:click|stopPropagation
+            on:click={(e) => openExternal(`https://openlibrary.org${book.openlibrary_key}`, e)}
           >
             OpenLibrary
           </a>
@@ -96,7 +118,6 @@
     text-align: left;
   }
 
-  .book-card:hover,
   .book-card.selected {
     border-color: var(--accent);
     background: var(--accent-light);
