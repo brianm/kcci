@@ -42,7 +42,11 @@
       "Bash(./scripts/build-sidecar.sh:*)",
       "Bash(open:*)",
       "Bash(log show:*)",
-      "Bash(make:*)"
+      "Bash(make:*)",
+      "Bash(file:*)",
+      "Bash(./src-tauri/target/release/bundle/macos/KCCI.app/Contents/MacOS/kcci:*)",
+      "Bash(pkill:*)",
+      "Bash(timeout 10 sh:*)"
     ]
   }
 }

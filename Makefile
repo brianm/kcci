@@ -1,4 +1,4 @@
-.PHONY: all sidecar dev build clean app test
+.PHONY: all sidecar dev build clean clean-all export-model app test
 
 TARGET := $(shell rustc -Vv | grep host | awk '{print $$2}')
 SIDECAR := src-tauri/binaries/kcci-server-$(TARGET)
@@ -31,9 +31,18 @@ app: $(SIDECAR)
 test:
 	uv run pytest
 
-# Clean all build artifacts
+# Clean build artifacts (preserves ONNX model)
 clean:
 	rm -rf dist build
-	rm -rf src-tauri/binaries
+	rm -f src-tauri/binaries/kcci-server-*
 	rm -rf src-tauri/target
 	@echo "Cleaned build artifacts"
+
+# Deep clean including ONNX model
+clean-all: clean
+	rm -rf src-tauri/binaries/onnx-model
+	@echo "Cleaned ONNX model - run 'make export-model' to regenerate"
+
+# Export ONNX model from HuggingFace (requires network, ~500MB download)
+export-model:
+	uv run --with transformers --with 'optimum[onnxruntime]' scripts/export-onnx-model.py

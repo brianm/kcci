@@ -11,3 +11,4 @@ __pycache__
 /src-tauri/binaries
 kcci_icon_image.png
 src-tauri/icons/ios/
+kcci_icon_transparent.png

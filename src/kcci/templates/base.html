@@ -530,6 +530,23 @@
 
         console.log('Drag-drop handlers initialized');
     })();
+
+    // Open external links in default browser (for Tauri)
+    document.addEventListener('click', function(e) {
+        const link = e.target.closest('a');
+        if (!link) return;
+
+        const href = link.getAttribute('href');
+        if (href && href.startsWith('http')) {
+            e.preventDefault();
+            // Use Tauri shell API if available, otherwise window.open
+            if (window.__TAURI__ && window.__TAURI__.shell) {
+                window.__TAURI__.shell.open(href);
+            } else {
+                window.open(href, '_blank');
+            }
+        }
+    });
     </script>
 </body>
 </html>
