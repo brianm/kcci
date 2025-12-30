@@ -65,7 +65,13 @@
       "Bash(git count-objects:*)",
       "Bash(cargo license:*)",
       "Bash(cargo tree:*)",
-      "Bash(npx license-checker:*)"
+      "Bash(npx license-checker:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr close:*)",
+      "Bash(gh api:*)",
+      "Bash(cargo update:*)",
+      "Bash(cargo generate-lockfile:*)",
+      "Bash(cargo search:*)"
     ]
   }
 }
