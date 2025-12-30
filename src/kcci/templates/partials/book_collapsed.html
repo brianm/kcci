@@ -1,7 +1,0 @@
-<div class="book-card" hx-get="/book/{{ book.asin }}/detail{% if score %}?score={{ score }}{% endif %}" hx-target="this" hx-swap="outerHTML">
-    <div class="book-title">
-        {% if score %}<span class="book-score">{{ score }}%</span>{% endif %}
-        {{ book.title }}
-    </div>
-    <div class="book-author">{{ book.authors|authors }}</div>
-</div>

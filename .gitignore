@@ -1,14 +1,31 @@
-*.gz
-*.webarchive
-.envrc
-/.vscode
+# Build outputs
 /dist
 /build
-/brian_read.amazon.com_cp.txt
 /tmp
-/.envrc
-__pycache__
-/src-tauri/binaries
+
+# Editor/IDE
+/.vscode
+
+# Config
+.envrc
+
+# Large files
+*.gz
+*.webarchive
 kcci_icon_image.png
-src-tauri/icons/ios/
 kcci_icon_transparent.png
+
+# Tauri
+src-tauri/target/
+src-tauri/binaries/onnx-model/
+src-tauri/icons/ios/
+
+# Node.js
+ui/node_modules/
+ui/dist/
+
+# macOS
+.DS_Store
+
+# Development data
+/brian_read.amazon.com_cp.txt

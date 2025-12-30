@@ -22,4 +22,24 @@ log = "0.4"
 tauri = { version = "2.9.5", features = [] }
 tauri-plugin-log = "2"
 tauri-plugin-shell = "2"
-reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls"] }
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls", "json"] }
+
+# Database
+rusqlite = { version = "0.32", features = ["bundled"] }
+sqlite-vec = "0.1"
+
+# Error handling
+thiserror = "2.0"
+
+# ONNX inference (downloads prebuilt binaries at build time)
+ort = { version = "2.0.0-rc.10" }
+tokenizers = "0.21"
+ndarray = "0.16"
+
+# Parsing
+plist = "1.7"
+regex = "1.11"
+urlencoding = "2.1"
+
+# Async
+tokio = { version = "1", features = ["sync"] }

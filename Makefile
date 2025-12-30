@@ -1,41 +1,39 @@
-.PHONY: all sidecar dev build clean clean-all export-model app test
-
-TARGET := $(shell rustc -Vv | grep host | awk '{print $$2}')
-SIDECAR := src-tauri/binaries/kcci-server-$(TARGET)
+.PHONY: all dev build clean clean-all export-model app check fmt ui
 
 all: build
 
-# Build the Python sidecar with PyInstaller
-sidecar: $(SIDECAR)
-
-$(SIDECAR): kcci-server.py kcci-server.spec src/kcci/*.py src/kcci/templates/*.html src/kcci/templates/**/*.html
-	@echo "Building sidecar for $(TARGET)..."
-	@mkdir -p src-tauri/binaries
-	uv run pyinstaller --clean --noconfirm kcci-server.spec
-	cp dist/kcci-server $(SIDECAR)
-	@echo "Sidecar built: $(SIDECAR)"
+# Build Svelte frontend
+ui:
+	cd ui && npm run build
 
 # Run in development mode
-dev: $(SIDECAR)
+dev:
+	cd ui && npm run dev &
 	cargo tauri dev
 
 # Build production app (includes DMG)
-build: $(SIDECAR)
+build: ui
 	cargo tauri build
 
 # Build just the .app bundle
-app: $(SIDECAR)
+app: ui
 	cargo tauri build --bundles app
 
-# Run Python tests
-test:
-	uv run pytest
+# Type check and lint
+check:
+	cargo check
+	cargo clippy
+
+# Format code
+fmt:
+	cargo fmt
+	cd ui && npm run format 2>/dev/null || true
 
 # Clean build artifacts (preserves ONNX model)
 clean:
 	rm -rf dist build
-	rm -f src-tauri/binaries/kcci-server-*
 	rm -rf src-tauri/target
+	rm -rf ui/dist
 	@echo "Cleaned build artifacts"
 
 # Deep clean including ONNX model
@@ -44,5 +42,7 @@ clean-all: clean
 	@echo "Cleaned ONNX model - run 'make export-model' to regenerate"
 
 # Export ONNX model from HuggingFace (requires network, ~500MB download)
+# Requires transformers and optimum packages (one-time setup)
 export-model:
-	uv run --with transformers --with 'optimum[onnxruntime]' scripts/export-onnx-model.py
+	pip install transformers 'optimum[onnxruntime]'
+	python scripts/export-onnx-model.py

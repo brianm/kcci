@@ -46,7 +46,17 @@
       "Bash(file:*)",
       "Bash(./src-tauri/target/release/bundle/macos/KCCI.app/Contents/MacOS/kcci:*)",
       "Bash(pkill:*)",
-      "Bash(timeout 10 sh:*)"
+      "Bash(timeout 10 sh:*)",
+      "Bash(cargo check:*)",
+      "Bash(grep:*)",
+      "Bash(npm create:*)",
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(cargo build:*)",
+      "Bash(jj show:*)",
+      "Bash(jj file show:*)",
+      "Bash(jj file list:*)"
     ]
   }
 }

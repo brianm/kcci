@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "identifier": "org.skife.kcci",
   "build": {
-    "frontendDist": "frontend"
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../ui/dist"
   },
   "app": {
     "windows": [
@@ -32,8 +33,8 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "externalBin": [
-      "binaries/kcci-server"
+    "resources": [
+      "binaries/onnx-model/*"
     ],
     "macOS": {
       "minimumSystemVersion": "10.15"
