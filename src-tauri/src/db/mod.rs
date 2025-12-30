@@ -239,19 +239,51 @@ impl Database {
             .map_err(|e| e.into())
     }
 
-    /// Get paginated list of all books
-    pub fn get_all_books(&self, limit: usize, offset: usize) -> Result<Vec<BookWithMeta>> {
-        let mut stmt = self.conn.prepare(
+    /// Get paginated list of all books with optional sorting and filtering
+    pub fn get_all_books(
+        &self,
+        limit: usize,
+        offset: usize,
+        sort_by: Option<&str>,
+        sort_dir: Option<&str>,
+        subject_filter: Option<&str>,
+    ) -> Result<Vec<BookWithMeta>> {
+        let order_clause = match sort_by {
+            Some("author") => {
+                let dir = if sort_dir == Some("desc") { "DESC" } else { "ASC" };
+                format!("json_extract(b.authors, '$[0]') {}", dir)
+            }
+            Some("year") => {
+                let dir = if sort_dir == Some("desc") { "DESC NULLS LAST" } else { "ASC NULLS LAST" };
+                format!("m.publish_year {}", dir)
+            }
+            _ => {
+                let dir = if sort_dir == Some("desc") { "DESC" } else { "ASC" };
+                format!("b.title {}", dir)
+            }
+        };
+
+        let where_clause = if subject_filter.is_some() {
+            "WHERE m.subjects LIKE '%' || ?3 || '%'"
+        } else {
+            ""
+        };
+
+        let sql = format!(
             "SELECT b.asin, b.title, b.authors, b.cover_url, b.percent_read,
                     b.resource_type, b.origin_type,
                     m.description, m.subjects, m.publish_year, m.isbn, m.openlibrary_key
              FROM books b
              LEFT JOIN metadata m ON b.asin = m.asin
-             ORDER BY b.title
+             {}
+             ORDER BY {}
              LIMIT ?1 OFFSET ?2",
-        )?;
+            where_clause, order_clause
+        );
 
-        let rows = stmt.query_map(params![limit, offset], |row| {
+        let mut stmt = self.conn.prepare(&sql)?;
+
+        fn map_row(row: &rusqlite::Row) -> rusqlite::Result<BookWithMeta> {
             Ok(BookWithMeta {
                 asin: row.get(0)?,
                 title: row.get(1)?,
@@ -268,10 +300,58 @@ impl Database {
                 distance: None,
                 rank: None,
             })
+        }
+
+        let books: Vec<BookWithMeta> = if let Some(filter) = subject_filter {
+            stmt.query_map(params![limit, offset, filter], map_row)?
+                .collect::<std::result::Result<Vec<_>, _>>()?
+        } else {
+            stmt.query_map(params![limit, offset], map_row)?
+                .collect::<std::result::Result<Vec<_>, _>>()?
+        };
+
+        Ok(books)
+    }
+
+    /// Get distinct subjects for filtering
+    pub fn get_subjects(&self) -> Result<Vec<String>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT DISTINCT subjects FROM metadata WHERE subjects IS NOT NULL AND subjects != '[]'"
+        )?;
+
+        let rows = stmt.query_map([], |row| {
+            let subjects_json: String = row.get(0)?;
+            Ok(subjects_json)
         })?;
 
-        rows.collect::<std::result::Result<Vec<_>, _>>()
-            .map_err(|e| e.into())
+        let mut all_subjects: std::collections::HashSet<String> = std::collections::HashSet::new();
+        for row in rows {
+            let subjects_json = row?;
+            let subjects: Vec<String> = serde_json::from_str(&subjects_json).unwrap_or_default();
+            for subject in subjects {
+                all_subjects.insert(subject);
+            }
+        }
+
+        let mut subjects: Vec<String> = all_subjects.into_iter().collect();
+        subjects.sort();
+        Ok(subjects)
+    }
+
+    /// Get book count with optional subject filter
+    pub fn get_book_count_filtered(&self, subject_filter: Option<&str>) -> Result<usize> {
+        if let Some(subject) = subject_filter {
+            let count: usize = self.conn.query_row(
+                "SELECT COUNT(*) FROM books b
+                 LEFT JOIN metadata m ON b.asin = m.asin
+                 WHERE m.subjects LIKE '%' || ?1 || '%'",
+                params![subject],
+                |row| row.get(0),
+            )?;
+            Ok(count)
+        } else {
+            self.get_book_count()
+        }
     }
 
     /// Get a single book by ASIN

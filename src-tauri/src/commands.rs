@@ -63,20 +63,29 @@ pub fn get_book(db: State<DbState>, asin: String) -> Result<Option<BookWithMeta>
     db.get_book_by_asin(&asin)
 }
 
-/// Get paginated list of all books
+/// Get paginated list of all books with optional sorting and filtering
 #[tauri::command]
 pub fn list_books(
     db: State<DbState>,
     page: Option<usize>,
     per_page: Option<usize>,
+    sort_by: Option<String>,
+    sort_dir: Option<String>,
+    subject: Option<String>,
 ) -> Result<PaginatedBooks> {
     let page = page.unwrap_or(1).max(1);
     let per_page = per_page.unwrap_or(50);
     let offset = (page - 1) * per_page;
 
     let db = db.0.lock().unwrap();
-    let books = db.get_all_books(per_page, offset)?;
-    let total = db.get_book_count()?;
+    let books = db.get_all_books(
+        per_page,
+        offset,
+        sort_by.as_deref(),
+        sort_dir.as_deref(),
+        subject.as_deref(),
+    )?;
+    let total = db.get_book_count_filtered(subject.as_deref())?;
     let total_pages = (total + per_page - 1) / per_page;
 
     Ok(PaginatedBooks {
@@ -86,6 +95,13 @@ pub fn list_books(
         total,
         total_pages,
     })
+}
+
+/// Get all distinct subjects for filtering
+#[tauri::command]
+pub fn get_subjects(db: State<DbState>) -> Result<Vec<String>> {
+    let db = db.0.lock().unwrap();
+    db.get_subjects()
 }
 
 /// Sync library: import, enrich, embed

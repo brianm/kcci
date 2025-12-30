@@ -1,21 +1,23 @@
 <script lang="ts">
-  import { tick, onMount } from 'svelte';
+  import { tick } from 'svelte';
   import { search, type Book } from '../lib/api';
   import BookCard from '../components/BookCard.svelte';
 
-  let query = '';
-  let mode: 'semantic' | 'fts' = 'semantic';
+  export let query = '';
+  export let searchInput: HTMLInputElement | undefined = undefined;
+
   let results: Book[] = [];
   let loading = false;
   let debounceTimer: ReturnType<typeof setTimeout>;
   let selectedIndex = -1;
   let expandedAsin: string | null = null;
   let resultsContainer: HTMLElement;
-  let searchInput: HTMLInputElement;
 
-  onMount(() => {
-    searchInput?.focus();
-  });
+  $: {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(doSearch, 300);
+    query; // dependency
+  }
 
   async function doSearch() {
     if (!query.trim()) {
@@ -27,7 +29,7 @@
 
     loading = true;
     try {
-      results = await search(query, mode);
+      results = await search(query, 'semantic');
       selectedIndex = results.length > 0 ? 0 : -1;
       expandedAsin = null;
     } catch (e) {
@@ -39,18 +41,9 @@
     }
   }
 
-  function handleInput() {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(doSearch, 300);
-  }
-
-  function handleModeChange() {
-    if (query.trim()) {
-      doSearch();
-    }
-  }
-
   async function handleKeydown(e: KeyboardEvent) {
+    // Only handle when search input is focused
+    if (document.activeElement !== searchInput) return;
     if (results.length === 0) return;
 
     if (e.key === 'ArrowDown') {
@@ -88,20 +81,7 @@
   }
 </script>
 
-<div class="search-box">
-  <input
-    type="text"
-    bind:this={searchInput}
-    bind:value={query}
-    on:input={handleInput}
-    on:keydown={handleKeydown}
-    placeholder="Search your library..."
-  />
-  <select bind:value={mode} on:change={handleModeChange}>
-    <option value="semantic">Semantic</option>
-    <option value="fts">Keyword</option>
-  </select>
-</div>
+<svelte:window on:keydown={handleKeydown} />
 
 {#if loading}
   <p class="status">Searching...</p>
@@ -113,7 +93,7 @@
   {#each results as book, index (book.asin)}
     <BookCard
       {book}
-      showScore={mode === 'semantic'}
+      showScore={true}
       selected={index === selectedIndex}
       expanded={expandedAsin === book.asin}
       on:click={() => handleCardClick(index, book.asin)}
@@ -123,38 +103,6 @@
 </div>
 
 <style>
-  .search-box {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1rem;
-  }
-
-  .search-box input[type="text"] {
-    flex: 1;
-    padding: 0.75rem 1rem;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--bg-light);
-    color: var(--text);
-    font-size: 1rem;
-  }
-
-  .search-box input:focus {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-light);
-  }
-
-  .search-box select {
-    padding: 0.75rem 1rem;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--bg-light);
-    color: var(--text);
-    font-size: 0.95rem;
-    cursor: pointer;
-  }
-
   .status, .results-count {
     color: var(--text-dim);
     margin-bottom: 1rem;

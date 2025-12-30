@@ -48,6 +48,7 @@ pub fn run() {
             commands::search,
             commands::get_book,
             commands::list_books,
+            commands::get_subjects,
             commands::sync_library,
         ])
         .run(tauri::generate_context!())

@@ -46,9 +46,13 @@ cargo tauri build
 5. Set Format to **"Web Archive"**
 6. Save the file, then use KCCI's Import tab to select it
 
+## Notice
+
+This tool processes user-provided HTML files and makes no network requests to Amazon. Users are responsible for compliance with any applicable terms for services they use. KCCI is intended for personal library management.
+
 ## License
 
-MIT
+Apache-2.0
 
 See [THIRD_PARTY_LICENSES.txt](THIRD_PARTY_LICENSES.txt) for third-party component licenses.
 

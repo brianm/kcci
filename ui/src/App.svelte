@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { getStats, type Stats } from './lib/api';
   import Search from './routes/Search.svelte';
   import Browse from './routes/Browse.svelte';
@@ -7,17 +7,29 @@
 
   let currentRoute = 'search';
   let stats: Stats | null = null;
+  let query = '';
+  let searchInput: HTMLInputElement;
 
   onMount(async () => {
     try {
       stats = await getStats();
+      if (stats.total_books === 0) {
+        currentRoute = 'import';
+      }
     } catch (e) {
       console.error('Failed to get stats:', e);
+    }
+    if (currentRoute === 'search') {
+      await tick();
+      searchInput?.focus();
     }
   });
 
   function navigate(route: string) {
     currentRoute = route;
+    if (route === 'search') {
+      tick().then(() => searchInput?.focus());
+    }
   }
 
   function refreshStats() {
@@ -27,7 +39,15 @@
 
 <div class="container">
   <header>
-    <h1><a href="#/" on:click|preventDefault={() => navigate('search')}>KCCI</a></h1>
+    {#if currentRoute === 'search'}
+      <input
+        type="text"
+        class="header-search"
+        bind:this={searchInput}
+        bind:value={query}
+        placeholder="Search your library..."
+      />
+    {/if}
     <nav>
       <a href="#/" class:active={currentRoute === 'search'} on:click|preventDefault={() => navigate('search')}>Search</a>
       <a href="#/books" class:active={currentRoute === 'browse'} on:click|preventDefault={() => navigate('browse')}>Browse</a>
@@ -37,7 +57,7 @@
 
   <main>
     {#if currentRoute === 'search'}
-      <Search />
+      <Search {query} {searchInput} />
     {:else if currentRoute === 'browse'}
       <Browse {stats} />
     {:else if currentRoute === 'import'}
@@ -83,26 +103,33 @@
 
   header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 2rem;
     padding: 1rem 0;
     border-bottom: 1px solid var(--border);
     margin-bottom: 1rem;
   }
 
-  header h1 {
-    font-size: 1.5rem;
-    font-weight: 700;
+  .header-search {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-light);
+    color: var(--text);
+    font-size: 0.95rem;
   }
 
-  header h1 a {
-    color: var(--text);
-    text-decoration: none;
+  .header-search:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-light);
   }
 
   nav {
     display: flex;
     gap: 2rem;
+    margin-left: auto;
   }
 
   nav a {

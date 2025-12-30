@@ -57,8 +57,20 @@ export async function getBook(asin: string): Promise<Book | null> {
     return invoke('get_book', { asin });
 }
 
-export async function listBooks(page?: number, perPage?: number): Promise<PaginatedBooks> {
-    return invoke('list_books', { page, perPage });
+export interface ListBooksOptions {
+    page?: number;
+    perPage?: number;
+    sortBy?: 'title' | 'author' | 'year';
+    sortDir?: 'asc' | 'desc';
+    subject?: string;
+}
+
+export async function listBooks(options: ListBooksOptions = {}): Promise<PaginatedBooks> {
+    return invoke('list_books', options);
+}
+
+export async function getSubjects(): Promise<string[]> {
+    return invoke('get_subjects');
 }
 
 export async function syncLibrary(

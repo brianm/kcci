@@ -71,7 +71,8 @@
       "Bash(gh api:*)",
       "Bash(cargo update:*)",
       "Bash(cargo generate-lockfile:*)",
-      "Bash(cargo search:*)"
+      "Bash(cargo search:*)",
+      "Bash(security find-identity:*)"
     ]
   }
 }

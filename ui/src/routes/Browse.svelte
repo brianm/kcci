@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { listBooks, type Book, type PaginatedBooks, type Stats } from '../lib/api';
+  import { listBooks, getSubjects, type Book, type PaginatedBooks, type Stats, type ListBooksOptions } from '../lib/api';
   import BookCard from '../components/BookCard.svelte';
 
   export let stats: Stats | null = null;
@@ -14,7 +14,20 @@
   let expandedAsin: string | null = null;
   let sentinel: HTMLElement;
 
-  onMount(() => {
+  // Sorting and filtering state
+  let sortBy: 'title' | 'author' | 'year' = 'title';
+  let sortDir: 'asc' | 'desc' = 'asc';
+  let selectedSubject: string = '';
+  let subjects: string[] = [];
+
+  onMount(async () => {
+    // Load subjects for filter dropdown
+    try {
+      subjects = await getSubjects();
+    } catch (e) {
+      console.error('Failed to load subjects:', e);
+    }
+
     loadMore();
 
     const observer = new IntersectionObserver(
@@ -36,7 +49,16 @@
     loading = true;
     error = null;
     try {
-      const data = await listBooks(currentPage + 1, 50);
+      const options: ListBooksOptions = {
+        page: currentPage + 1,
+        perPage: 50,
+        sortBy,
+        sortDir,
+      };
+      if (selectedSubject) {
+        options.subject = selectedSubject;
+      }
+      const data = await listBooks(options);
       books = [...books, ...data.books];
       currentPage = data.page;
       totalPages = data.total_pages;
@@ -45,6 +67,26 @@
     } finally {
       loading = false;
     }
+  }
+
+  function resetAndReload() {
+    books = [];
+    currentPage = 0;
+    totalPages = 1;
+    loadMore();
+  }
+
+  function handleSortChange() {
+    resetAndReload();
+  }
+
+  function handleSubjectChange() {
+    resetAndReload();
+  }
+
+  function toggleSortDir() {
+    sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    resetAndReload();
   }
 
   function handleCardClick(index: number, asin: string) {
@@ -58,22 +100,34 @@
 </script>
 
 <div class="browse-page">
-  {#if stats}
-    <div class="stats">
-      <div class="stat">
-        <div class="stat-value">{stats.total_books}</div>
-        <div class="stat-label">Books</div>
-      </div>
-      <div class="stat">
-        <div class="stat-value">{stats.enriched}</div>
-        <div class="stat-label">Enriched</div>
-      </div>
-      <div class="stat">
-        <div class="stat-value">{stats.with_embeddings}</div>
-        <div class="stat-label">Embedded</div>
-      </div>
+  <div class="controls">
+    <div class="sort-controls">
+      <label>
+        Sort by:
+        <select bind:value={sortBy} on:change={handleSortChange}>
+          <option value="title">Title</option>
+          <option value="author">Author</option>
+          <option value="year">Year</option>
+        </select>
+      </label>
+      <button class="sort-dir" on:click={toggleSortDir} title="Toggle sort direction">
+        {sortDir === 'asc' ? '↑' : '↓'}
+      </button>
     </div>
-  {/if}
+    {#if subjects.length > 0}
+      <div class="filter-controls">
+        <label>
+          Subject:
+          <select bind:value={selectedSubject} on:change={handleSubjectChange}>
+            <option value="">All subjects</option>
+            {#each subjects as subject}
+              <option value={subject}>{subject}</option>
+            {/each}
+          </select>
+        </label>
+      </div>
+    {/if}
+  </div>
 
   {#if error}
     <p class="error">{error}</p>
@@ -101,29 +155,59 @@
 </div>
 
 <style>
-  .stats {
+  .controls {
     display: flex;
     gap: 2rem;
-    margin-bottom: 2rem;
-    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem 1.25rem;
     background: var(--bg-light);
     border-radius: 8px;
     border: 1px solid var(--border);
+    flex-wrap: wrap;
+    align-items: center;
   }
 
-  .stat {
-    text-align: center;
+  .sort-controls, .filter-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
-  .stat-value {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: var(--accent);
-  }
-
-  .stat-label {
-    font-size: 0.85rem;
+  .controls label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
     color: var(--text-dim);
+  }
+
+  .controls select {
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+
+  .controls select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .sort-dir {
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+
+  .sort-dir:hover {
+    background: var(--border);
   }
 
   .loading, .error {
