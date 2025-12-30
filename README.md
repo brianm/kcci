@@ -1,30 +1,55 @@
-# Keith's Card Catalog Index
+# Keith's Card Catalog Index (KCCI)
 
-## .plan
+A desktop app for personal book library management with semantic search. Import your Kindle library, enrich with OpenLibrary metadata, and search by meaning rather than just keywords.
 
-1. parse inputs in common formats to build candidate list
-2. use openlibrary to get information about candidates
-3. create embedding for each candidate
-4. store embedding raw data with the candidate in sqlite or something (so we can rebuild index without recaclulating embeddings)
-5. Build an index (annoy? faiss?) of the embeddings
+## Features
 
-## References
+- **Import Kindle Library**: Parse Safari webarchive exports from read.amazon.com
+- **Metadata Enrichment**: Automatically fetch book details from OpenLibrary (descriptions, subjects, publish dates)
+- **Semantic Search**: Find books by meaning using sentence embeddings (all-MiniLM-L6-v2)
+- **Keyword Search**: Full-text search with SQLite FTS5
+- **Keyboard Navigation**: Arrow keys to navigate results, Enter to expand
 
-* [Library of Congress API](https://loc.gov/apis)
-* [OpenLibrary](https://openlibrary.org) [API](https://openlibrary.org/developers/api)
-* [WorldCat](https://www.oclc.org/developer/api/oclc-apis/worldcat-search-api.en.html0)
-* [Google Books API](https://developers.google.com/books/)
-* [SBERT Semantic Search](https://www.sbert.net/examples/applications/semantic-search/README.html)
-* [Simon Willison's Explorations](https://til.simonwillison.net/python/gtr-t5-large)
-* [Semantic Search in Rust](https://sachaarbonel.medium.com/how-to-build-a-semantic-search-engine-in-rust-e96e6378cfd9)
-* [Annoy](https://github.com/spotify/annoy)
-* [FAISS](https://github.com/facebookresearch/faiss)
-  * To save the index: `faiss.write_index(index, filename)`
-  * To load the index: `index = faiss.read_index(filename)`
-* [Textual](https://textual.textualize.io) terminal ui library
-* [FastEmbed-rs](https://github.com/anush008/fastembed-rs) way to generate embeddings in rust
-* [sqlite-vec](https://github.com/asg017/sqlite-vec) vector search in sqlite
-* [lancedb](https://lancedb.github.io/lancedb/) embedded search-oriented database
-  * Note need to [statically link lzma-sys](https://github.com/lancedb/lancedb/tree/main/rust/lancedb)
+## Tech Stack
 
+- **Frontend**: Svelte + TypeScript + Vite
+- **Backend**: Rust + Tauri v2
+- **Database**: SQLite + sqlite-vec (vector search)
+- **Embeddings**: ONNX Runtime (all-MiniLM-L6-v2 model)
 
+## Development
+
+```bash
+# Install dependencies
+cd ui && npm install
+
+# Start dev server
+cd ui && npm run dev    # Svelte dev server on port 5173
+cargo tauri dev         # Run Tauri app in dev mode
+
+# Build release
+cd ui && npm run build
+cargo tauri build
+```
+
+## Data Location
+
+- Database: `~/Library/Application Support/KCCI/books.db`
+- The ONNX model is bundled with the app (~416MB)
+
+## How to Import Your Kindle Library
+
+1. Open Safari and go to [read.amazon.com](https://read.amazon.com)
+2. Sign in with your Amazon account
+3. **Scroll down repeatedly** until all your books are loaded (the page lazy-loads as you scroll)
+4. From the menu bar, choose **File > Save As...**
+5. Set Format to **"Web Archive"**
+6. Save the file, then use KCCI's Import tab to select it
+
+## License
+
+MIT
+
+See [THIRD_PARTY_LICENSES.txt](THIRD_PARTY_LICENSES.txt) for third-party component licenses.
+
+Note: The embedding model (all-MiniLM-L6-v2) is Apache-2.0 licensed, but its training data includes datasets with commercial use restrictions.

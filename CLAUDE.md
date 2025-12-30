@@ -47,8 +47,8 @@ ui/src/
 ├── App.svelte        # Main app with routing
 ├── lib/api.ts        # TypeScript Tauri command wrappers
 ├── routes/
-│   ├── Search.svelte # Live search with debounce
-│   ├── Browse.svelte # Paginated book list
+│   ├── Search.svelte # Live search with keyboard navigation
+│   ├── Browse.svelte # Infinite scroll book list
 │   └── Import.svelte # Webarchive import with progress
 └── components/
     └── BookCard.svelte
@@ -74,3 +74,5 @@ src-tauri/binaries/onnx-model/
 - `svelte` - Reactive UI framework
 - `@tauri-apps/api` - Tauri IPC bindings
 - `@tauri-apps/plugin-dialog` - File picker dialog
+- `@tauri-apps/plugin-shell` - Open external links in browser
+- `marked` - Markdown rendering for book descriptions

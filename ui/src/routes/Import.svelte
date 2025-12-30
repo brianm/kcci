@@ -69,7 +69,7 @@
     <ol>
       <li>Open Safari and go to <a href="https://read.amazon.com" target="_blank" rel="noopener">read.amazon.com</a></li>
       <li>Sign in with your Amazon account</li>
-      <li>Wait for your library to fully load</li>
+      <li><strong>Scroll down repeatedly</strong> until all your books are loaded (the page lazy-loads as you scroll)</li>
       <li>From the menu bar, choose <strong>File &gt; Save As...</strong></li>
       <li>Set Format to <strong>"Web Archive"</strong></li>
       <li>Save the file, then click below to select it</li>
