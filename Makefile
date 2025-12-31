@@ -1,4 +1,4 @@
-.PHONY: all dev build clean clean-all export-model app check fmt ui
+.PHONY: all dev build clean clean-all export-model app check fmt ui release release-patch release-minor release-major
 
 all: build
 
@@ -47,3 +47,18 @@ clean-all: clean
 export-model:
 	pip install transformers 'optimum[onnxruntime]'
 	python scripts/export-onnx-model.py
+
+# Release targets (bump version, commit, tag, push)
+# Usage: make release-patch (0.2.2 -> 0.2.3)
+#        make release-minor (0.2.2 -> 0.3.0)
+#        make release-major (0.2.2 -> 1.0.0)
+release: release-patch
+
+release-patch:
+	cd src-tauri && cargo release patch --execute
+
+release-minor:
+	cd src-tauri && cargo release minor --execute
+
+release-major:
+	cd src-tauri && cargo release major --execute

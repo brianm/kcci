@@ -81,7 +81,8 @@
       "Bash(jj abandon:*)",
       "Bash(cargo test:*)",
       "WebFetch(domain:crates.io)",
-      "Bash(git remote:*)"
+      "Bash(git remote:*)",
+      "Bash(cargo install:*)"
     ]
   }
 }

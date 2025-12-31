@@ -1,0 +1,20 @@
+# cargo-release configuration
+# Run from src-tauri/: cargo release patch|minor|major
+
+# Don't publish to crates.io (this is an app, not a library)
+publish = false
+
+# Create a git tag
+tag = true
+tag-prefix = "v"
+tag-name = "{{prefix}}{{version}}"
+
+# Commit the version bump
+commit = true
+commit-message = "Release {{version}}"
+
+# Push after release
+push = true
+
+# Run pre-release hook to sync ui/package.json
+pre-release-hook = ["../scripts/sync-version.sh", "{{version}}"]
