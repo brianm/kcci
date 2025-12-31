@@ -1,8 +1,7 @@
 THIRD-PARTY LICENSES
 ====================
 
-KCCI (Keith's Card Catalog Index) incorporates third-party software and
-models. This file lists those components and their licenses.
+Ook incorporates third-party software and models. This file lists those components and their licenses.
 
 
 ================================================================================

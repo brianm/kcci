@@ -5,7 +5,7 @@ use std::path::Path;
 use std::sync::OnceLock;
 
 use crate::db::ImportedBook;
-use crate::error::{KcciError, Result};
+use crate::error::{OokError, Result};
 
 // Static regexes for HTML parsing (compiled once)
 static SCRIPT_RE: OnceLock<Regex> = OnceLock::new();
@@ -36,7 +36,7 @@ pub fn parse_webarchive(path: &Path) -> Result<Vec<ImportedBook>> {
 fn extract_html_from_webarchive(path: &Path) -> Result<Vec<u8>> {
     let data = std::fs::read(path)?;
     let plist = plist::from_bytes::<Value>(&data)
-        .map_err(|e| KcciError::Webarchive(format!("Failed to parse plist: {}", e)))?;
+        .map_err(|e| OokError::Webarchive(format!("Failed to parse plist: {}", e)))?;
 
     let html_bytes = plist
         .as_dictionary()
@@ -44,7 +44,7 @@ fn extract_html_from_webarchive(path: &Path) -> Result<Vec<u8>> {
         .and_then(|r| r.as_dictionary())
         .and_then(|d| d.get("WebResourceData"))
         .and_then(|d| d.as_data())
-        .ok_or_else(|| KcciError::Webarchive("Missing WebResourceData in webarchive".into()))?;
+        .ok_or_else(|| OokError::Webarchive("Missing WebResourceData in webarchive".into()))?;
 
     Ok(html_bytes.to_vec())
 }

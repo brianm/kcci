@@ -8,7 +8,7 @@ This project uses **jj (Jujutsu)**, not git. Work on the `redo` bookmark - do no
 
 ## Project Overview
 
-Keith's Card Catalog Index (KCCI) - a Tauri desktop app for personal book indexing with semantic search. Imports Kindle library from Safari webarchive, fetches metadata from OpenLibrary, generates embeddings using ONNX runtime, and stores them in SQLite with vector search (sqlite-vec).
+Ook - a Tauri desktop app for personal book indexing with semantic search. Imports Kindle library from Safari webarchive, fetches metadata from OpenLibrary, generates embeddings using ONNX runtime, and stores them in SQLite with vector search (sqlite-vec).
 
 ## Commands
 
@@ -33,7 +33,7 @@ cargo fmt                     # Format Rust code
 src-tauri/src/
 ├── main.rs           # Entry point
 ├── lib.rs            # Tauri app setup + command registration
-├── error.rs          # KcciError enum with thiserror
+├── error.rs          # OokError enum with thiserror
 ├── commands.rs       # Tauri commands (get_stats, search, sync_library, etc.)
 ├── db/
 │   ├── mod.rs        # SQLite + sqlite-vec operations

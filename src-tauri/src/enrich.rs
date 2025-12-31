@@ -7,7 +7,7 @@ use std::time::Duration;
 use crate::db::EnrichmentData;
 use crate::error::Result;
 
-const USER_AGENT: &str = "KCCI/1.0 (https://github.com/brianm/kcci; brianm@skife.org)";
+const USER_AGENT: &str = "Ook/1.0 (https://github.com/brianm/ook; brianm@skife.org)";
 const DEFAULT_DELAY: Duration = Duration::from_millis(250);
 
 // Static regexes for title normalization (compiled once)

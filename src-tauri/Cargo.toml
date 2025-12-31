@@ -1,7 +1,7 @@
 [package]
-name = "kcci"
+name = "ook"
 version = "0.1.0"
-description = "Keith's Card Catalog Index"
+description = "A personal book catalog with semantic search"
 authors = ["Brian McCallister <brianm@skife.org>"]
 license = "MIT"
 repository = ""

@@ -2,7 +2,7 @@ use serde::Serialize;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum KcciError {
+pub enum OokError {
     #[error("Database error: {0}")]
     Database(#[from] rusqlite::Error),
 
@@ -25,20 +25,20 @@ pub enum KcciError {
     Json(#[from] serde_json::Error),
 }
 
-impl From<tokenizers::Error> for KcciError {
+impl From<tokenizers::Error> for OokError {
     fn from(err: tokenizers::Error) -> Self {
-        KcciError::Tokenizer(err.to_string())
+        OokError::Tokenizer(err.to_string())
     }
 }
 
-impl From<ort::Error> for KcciError {
+impl From<ort::Error> for OokError {
     fn from(err: ort::Error) -> Self {
-        KcciError::Onnx(err.to_string())
+        OokError::Onnx(err.to_string())
     }
 }
 
 // Tauri requires serializable errors for commands
-impl Serialize for KcciError {
+impl Serialize for OokError {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -47,4 +47,4 @@ impl Serialize for KcciError {
     }
 }
 
-pub type Result<T> = std::result::Result<T, KcciError>;
+pub type Result<T> = std::result::Result<T, OokError>;

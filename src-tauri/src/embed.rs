@@ -5,7 +5,7 @@ use std::path::Path;
 use std::sync::Mutex;
 use tokenizers::Tokenizer;
 
-use crate::error::{KcciError, Result};
+use crate::error::{OokError, Result};
 
 /// Embedding dimension for multi-qa-mpnet-base-cos-v1
 pub const EMBEDDING_DIM: usize = 768;
@@ -25,7 +25,7 @@ impl EmbedderInner {
         let model_path = model_dir.join("model.onnx");
 
         if !tokenizer_path.exists() || !model_path.exists() {
-            return Err(KcciError::Onnx(format!(
+            return Err(OokError::Onnx(format!(
                 "Model not found at {:?}. Expected tokenizer.json and model.onnx",
                 model_dir
             )));
@@ -54,10 +54,10 @@ impl EmbedderInner {
 
         // Create input tensors
         let input_ids_array = Array2::from_shape_vec((1, seq_len), input_ids)
-            .map_err(|e| KcciError::Onnx(format!("Failed to create input_ids array: {}", e)))?;
+            .map_err(|e| OokError::Onnx(format!("Failed to create input_ids array: {}", e)))?;
         let attention_array = Array2::from_shape_vec((1, seq_len), attention_mask.clone())
             .map_err(|e| {
-                KcciError::Onnx(format!("Failed to create attention_mask array: {}", e))
+                OokError::Onnx(format!("Failed to create attention_mask array: {}", e))
             })?;
 
         // Convert to ort Values
@@ -73,7 +73,7 @@ impl EmbedderInner {
         // Get token embeddings: shape [1, seq_len, 768]
         let token_embs = outputs[0]
             .try_extract_array::<f32>()
-            .map_err(|e| KcciError::Onnx(format!("Failed to extract tensor: {}", e)))?;
+            .map_err(|e| OokError::Onnx(format!("Failed to extract tensor: {}", e)))?;
 
         // Mean pooling with attention mask
         let mut sum = vec![0.0f32; EMBEDDING_DIM];
@@ -119,7 +119,7 @@ pub fn embed_text(text: &str) -> Result<Vec<f32>> {
     let mut guard = EMBEDDER.lock().unwrap();
     let embedder = guard
         .as_mut()
-        .ok_or_else(|| KcciError::Onnx("Embedder not initialized".to_string()))?;
+        .ok_or_else(|| OokError::Onnx("Embedder not initialized".to_string()))?;
     embedder.embed(text)
 }
 

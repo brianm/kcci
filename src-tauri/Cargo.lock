@@ -2152,33 +2152,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "kcci"
-version = "0.1.0"
-dependencies = [
- "futures",
- "log",
- "ndarray",
- "ort",
- "plist",
- "regex",
- "reqwest",
- "rusqlite",
- "serde",
- "serde_json",
- "sqlite-vec",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-log",
- "tauri-plugin-shell",
- "tauri-plugin-window-state",
- "thiserror 2.0.17",
- "tokenizers",
- "tokio",
- "urlencoding",
-]
-
-[[package]]
 name = "keyboard-types"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2864,6 +2837,33 @@ checksum = "c7f86c6eef3d6df15f23bcfb6af487cbd2fed4e5581d58d5bf1f5f8b7f6727dc"
 dependencies = [
  "cc",
  "pkg-config",
+]
+
+[[package]]
+name = "ook"
+version = "0.1.0"
+dependencies = [
+ "futures",
+ "log",
+ "ndarray",
+ "ort",
+ "plist",
+ "regex",
+ "reqwest",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "sqlite-vec",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-log",
+ "tauri-plugin-shell",
+ "tauri-plugin-window-state",
+ "thiserror 2.0.17",
+ "tokenizers",
+ "tokio",
+ "urlencoding",
 ]
 
 [[package]]

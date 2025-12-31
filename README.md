@@ -1,4 +1,4 @@
-# Keith's Card Catalog Index (KCCI)
+# Ook
 
 A desktop app for personal book library management with semantic search. Import your Kindle library, enrich with OpenLibrary metadata, and search by meaning rather than just keywords.
 
@@ -34,7 +34,7 @@ cargo tauri build
 
 ## Data Location
 
-- Database: `~/Library/Application Support/KCCI/books.db`
+- Database: `~/Library/Application Support/Ook/books.db`
 - The ONNX model is bundled with the app (~416MB)
 
 ## How to Import Your Kindle Library
@@ -44,11 +44,11 @@ cargo tauri build
 3. **Scroll down repeatedly** until all your books are loaded (the page lazy-loads as you scroll)
 4. From the menu bar, choose **File > Save As...**
 5. Set Format to **"Web Archive"**
-6. Save the file, then use KCCI's Import tab to select it
+6. Save the file, then use Ook's Import tab to select it
 
 ## Notice
 
-This tool processes user-provided HTML files and makes no network requests to Amazon. Users are responsible for compliance with any applicable terms for services they use. KCCI is intended for personal library management.
+This tool processes user-provided HTML files and makes no network requests to Amazon. Users are responsible for compliance with any applicable terms for services they use. Ook is intended for personal library management.
 
 ## License
 

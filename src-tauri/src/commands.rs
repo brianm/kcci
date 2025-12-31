@@ -241,14 +241,14 @@ pub async fn download_model(app: AppHandle) -> Result<()> {
 
         // Download with progress
         let response = client.get(&url).send().await.map_err(|e| {
-            crate::error::KcciError::Io(std::io::Error::other(format!(
+            crate::error::OokError::Io(std::io::Error::other(format!(
                 "Failed to download {}: {}",
                 filename, e
             )))
         })?;
 
         if !response.status().is_success() {
-            return Err(crate::error::KcciError::Io(std::io::Error::other(format!(
+            return Err(crate::error::OokError::Io(std::io::Error::other(format!(
                 "Failed to download {}: HTTP {}",
                 filename,
                 response.status()
@@ -260,7 +260,7 @@ pub async fn download_model(app: AppHandle) -> Result<()> {
 
         while let Some(chunk) = stream.next().await {
             let chunk = chunk.map_err(|e| {
-                crate::error::KcciError::Io(std::io::Error::other(format!(
+                crate::error::OokError::Io(std::io::Error::other(format!(
                     "Download error for {}: {}",
                     filename, e
                 )))
@@ -283,7 +283,7 @@ pub async fn download_model(app: AppHandle) -> Result<()> {
         let actual_size = fs::metadata(&temp_path)?.len();
         if actual_size != *expected_size {
             fs::remove_file(&temp_path)?;
-            return Err(crate::error::KcciError::Io(std::io::Error::other(format!(
+            return Err(crate::error::OokError::Io(std::io::Error::other(format!(
                 "Size mismatch for {}: expected {} bytes, got {}",
                 filename, expected_size, actual_size
             ))));
@@ -301,7 +301,7 @@ fn get_download_dir(app: &AppHandle) -> Result<PathBuf> {
     let app_data = app
         .path()
         .app_data_dir()
-        .map_err(|e| crate::error::KcciError::Io(std::io::Error::other(e.to_string())))?;
+        .map_err(|e| crate::error::OokError::Io(std::io::Error::other(e.to_string())))?;
     Ok(app_data.join("onnx-model"))
 }
 
@@ -319,18 +319,18 @@ fn get_model_dir(app: &AppHandle) -> Result<PathBuf> {
     let app_data = app
         .path()
         .app_data_dir()
-        .map_err(|e| crate::error::KcciError::Io(std::io::Error::other(e.to_string())))?;
+        .map_err(|e| crate::error::OokError::Io(std::io::Error::other(e.to_string())))?;
     Ok(app_data.join("onnx-model"))
 }
 
-/// Get the database path (~/Library/Application Support/KCCI/books.db for backward compatibility)
+/// Get the database path (~/Library/Application Support/Ook/books.db)
 pub fn get_db_path(_app: &AppHandle) -> Result<PathBuf> {
     let home = std::env::var("HOME")
-        .map_err(|_| crate::error::KcciError::Io(std::io::Error::other("HOME not set")))?;
-    let kcci_dir = PathBuf::from(home)
+        .map_err(|_| crate::error::OokError::Io(std::io::Error::other("HOME not set")))?;
+    let ook_dir = PathBuf::from(home)
         .join("Library")
         .join("Application Support")
-        .join("KCCI");
-    std::fs::create_dir_all(&kcci_dir)?;
-    Ok(kcci_dir.join("books.db"))
+        .join("Ook");
+    std::fs::create_dir_all(&ook_dir)?;
+    Ok(ook_dir.join("books.db"))
 }
