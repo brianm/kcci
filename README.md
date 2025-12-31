@@ -6,7 +6,7 @@ A desktop app for personal book library management with semantic search. Import 
 
 - **Import Kindle Library**: Parse Safari webarchive exports from read.amazon.com
 - **Metadata Enrichment**: Automatically fetch book details from OpenLibrary (descriptions, subjects, publish dates)
-- **Semantic Search**: Find books by meaning using sentence embeddings (all-MiniLM-L6-v2)
+- **Semantic Search**: Find books by meaning using sentence embeddings (multi-qa-mpnet-base-cos-v1)
 - **Keyword Search**: Full-text search with SQLite FTS5
 - **Keyboard Navigation**: Arrow keys to navigate results, Enter to expand
 
@@ -15,7 +15,7 @@ A desktop app for personal book library management with semantic search. Import 
 - **Frontend**: Svelte + TypeScript + Vite
 - **Backend**: Rust + Tauri v2
 - **Database**: SQLite + sqlite-vec (vector search)
-- **Embeddings**: ONNX Runtime (all-MiniLM-L6-v2 model)
+- **Embeddings**: ONNX Runtime (multi-qa-mpnet-base-cos-v1 model)
 
 ## Development
 
@@ -56,4 +56,4 @@ Apache-2.0
 
 See [THIRD_PARTY_LICENSES.txt](THIRD_PARTY_LICENSES.txt) for third-party component licenses.
 
-Note: The embedding model (all-MiniLM-L6-v2) is Apache-2.0 licensed, but its training data includes datasets with commercial use restrictions.
+Note: The embedding model (multi-qa-mpnet-base-cos-v1) is Apache-2.0 licensed, but its training data includes datasets with commercial use restrictions.
