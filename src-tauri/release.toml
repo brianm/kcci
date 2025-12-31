@@ -1,6 +1,9 @@
 # cargo-release configuration
 # Run from src-tauri/: cargo release patch|minor|major
 
+# Allow release from any branch (jj uses detached HEAD)
+allow-branch = ["*"]
+
 # Don't publish to crates.io (this is an app, not a library)
 publish = false
 
