@@ -3,8 +3,8 @@ name = "ook"
 version = "0.1.0"
 description = "A personal book catalog with semantic search"
 authors = ["Brian McCallister <brianm@skife.org>"]
-license = "MIT"
-repository = ""
+license = "Apache-2.0"
+repository = "https://github.com/brianm/ook"
 edition = "2021"
 rust-version = "1.77.2"
 

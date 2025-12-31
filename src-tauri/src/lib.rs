@@ -9,6 +9,7 @@ mod webarchive;
 use commands::{get_db_path, DbState};
 use db::Database;
 use std::sync::Mutex;
+use tauri::menu::{AboutMetadata, Menu, Submenu};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -18,6 +19,81 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_window_state::Builder::new().build())
         .setup(|app| {
+            // Create custom menu with proper About metadata
+            let about_metadata = AboutMetadata {
+                name: Some("Ook".into()),
+                version: Some(env!("CARGO_PKG_VERSION").into()),
+                authors: Some(vec!["Brian McCallister".into()]),
+                comments: Some("A personal book catalog with semantic search".into()),
+                license: Some("Apache-2.0".into()),
+                website: Some("https://github.com/brianm/ook".into()),
+                ..Default::default()
+            };
+
+            let menu = Menu::with_items(
+                app,
+                &[
+                    &Submenu::with_id_and_items(
+                        app,
+                        "app",
+                        "Ook",
+                        true,
+                        &[
+                            &tauri::menu::PredefinedMenuItem::about(
+                                app,
+                                Some("About Ook"),
+                                Some(about_metadata),
+                            )?,
+                            &tauri::menu::PredefinedMenuItem::separator(app)?,
+                            &tauri::menu::PredefinedMenuItem::services(app, Some("Services"))?,
+                            &tauri::menu::PredefinedMenuItem::separator(app)?,
+                            &tauri::menu::PredefinedMenuItem::hide(app, Some("Hide Ook"))?,
+                            &tauri::menu::PredefinedMenuItem::hide_others(
+                                app,
+                                Some("Hide Others"),
+                            )?,
+                            &tauri::menu::PredefinedMenuItem::show_all(app, Some("Show All"))?,
+                            &tauri::menu::PredefinedMenuItem::separator(app)?,
+                            &tauri::menu::PredefinedMenuItem::quit(app, Some("Quit Ook"))?,
+                        ],
+                    )?,
+                    &Submenu::with_id_and_items(
+                        app,
+                        "edit",
+                        "Edit",
+                        true,
+                        &[
+                            &tauri::menu::PredefinedMenuItem::undo(app, Some("Undo"))?,
+                            &tauri::menu::PredefinedMenuItem::redo(app, Some("Redo"))?,
+                            &tauri::menu::PredefinedMenuItem::separator(app)?,
+                            &tauri::menu::PredefinedMenuItem::cut(app, Some("Cut"))?,
+                            &tauri::menu::PredefinedMenuItem::copy(app, Some("Copy"))?,
+                            &tauri::menu::PredefinedMenuItem::paste(app, Some("Paste"))?,
+                            &tauri::menu::PredefinedMenuItem::select_all(app, Some("Select All"))?,
+                        ],
+                    )?,
+                    &Submenu::with_id_and_items(
+                        app,
+                        "window",
+                        "Window",
+                        true,
+                        &[
+                            &tauri::menu::PredefinedMenuItem::minimize(app, Some("Minimize"))?,
+                            &tauri::menu::PredefinedMenuItem::maximize(app, Some("Zoom"))?,
+                            &tauri::menu::PredefinedMenuItem::separator(app)?,
+                            &tauri::menu::PredefinedMenuItem::close_window(
+                                app,
+                                Some("Close Window"),
+                            )?,
+                        ],
+                    )?,
+                ],
+            )?;
+
+            // Set the menu on the main window
+            if let Some(window) = app.get_webview_window("main") {
+                window.set_menu(menu)?;
+            }
             // Set up logging in debug mode
             if cfg!(debug_assertions) {
                 app.handle().plugin(
