@@ -8,7 +8,7 @@ use crate::db::{Database, EnrichmentData};
 use crate::embed;
 use crate::enrich::OpenLibrary;
 use crate::error::Result;
-use crate::webarchive;
+use crate::import;
 
 /// Progress update sent via Tauri events
 #[derive(Clone, Serialize)]
@@ -33,7 +33,7 @@ const ENRICH_DELAY: Duration = Duration::from_millis(250);
 pub fn sync(
     app: &AppHandle,
     db: &Database,
-    webarchive_path: Option<&Path>,
+    import_path: Option<&Path>,
     model_dir: &Path,
 ) -> Result<SyncStats> {
     let mut stats = SyncStats {
@@ -46,12 +46,12 @@ pub fn sync(
         let _ = app.emit("sync-progress", progress);
     };
 
-    // Stage 1: Import (if webarchive provided)
-    if let Some(path) = webarchive_path {
+    // Stage 1: Import (if import file provided)
+    if let Some(path) = import_path {
         let filename = path
             .file_name()
             .map(|s| s.to_string_lossy().to_string())
-            .unwrap_or_else(|| "webarchive".to_string());
+            .unwrap_or_else(|| "file".to_string());
 
         emit(SyncProgress {
             stage: "import".into(),
@@ -60,11 +60,11 @@ pub fn sync(
             total: None,
         });
 
-        let books = webarchive::parse_webarchive(path)?;
+        let books = import::parse_import_file(path)?;
 
         emit(SyncProgress {
             stage: "import".into(),
-            message: format!("Found {} books in webarchive", books.len()),
+            message: format!("Found {} books", books.len()),
             current: None,
             total: None,
         });

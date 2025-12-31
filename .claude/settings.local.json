@@ -90,7 +90,9 @@
       "WebFetch(domain:hardcover.app)",
       "WebFetch(domain:bookbrainz.org)",
       "WebFetch(domain:archive.org)",
-      "WebFetch(domain:brave.com)"
+      "WebFetch(domain:brave.com)",
+      "WebFetch(domain:skife.org)",
+      "Bash(cargo clean:*)"
     ]
   }
 }

@@ -13,8 +13,12 @@
 # Large files
 *.gz
 *.webarchive
+*.mhtml
 kcci_icon_image.png
 kcci_icon_transparent.png
+
+# Test import files
+Kindle-*.html
 
 # Tauri
 src-tauri/target/

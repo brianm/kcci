@@ -3,8 +3,8 @@ mod db;
 mod embed;
 mod enrich;
 mod error;
+mod import;
 mod sync;
-mod webarchive;
 
 use commands::{get_db_path, DbState};
 use db::Database;
