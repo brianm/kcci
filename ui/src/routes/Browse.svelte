@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { listBooks, getSubjects, type Book, type PaginatedBooks, type Stats, type ListBooksOptions } from '../lib/api';
+  import { listBooks, getSubjects, type Book, type PaginatedBooks, type Stats, type ListBooksOptions, type Filter } from '../lib/api';
   import BookCard from '../components/BookCard.svelte';
+  import FilterBuilder from '../components/FilterBuilder.svelte';
 
   export let stats: Stats | null = null;
 
@@ -17,7 +18,7 @@
   // Sorting and filtering state
   let sortBy: 'title' | 'author' | 'year' = 'title';
   let sortDir: 'asc' | 'desc' = 'asc';
-  let selectedSubject: string = '';
+  let filters: Filter[] = [];
   let subjects: string[] = [];
 
   onMount(async () => {
@@ -55,8 +56,8 @@
         sortBy,
         sortDir,
       };
-      if (selectedSubject) {
-        options.subject = selectedSubject;
+      if (filters.length > 0) {
+        options.filters = filters;
       }
       const data = await listBooks(options);
       books = [...books, ...data.books];
@@ -80,7 +81,8 @@
     resetAndReload();
   }
 
-  function handleSubjectChange() {
+  function handleFiltersChange(event: CustomEvent<Filter[]>) {
+    filters = event.detail;
     resetAndReload();
   }
 
@@ -114,19 +116,10 @@
         {sortDir === 'asc' ? '↑' : '↓'}
       </button>
     </div>
-    {#if subjects.length > 0}
-      <div class="filter-controls">
-        <label>
-          Subject:
-          <select bind:value={selectedSubject} on:change={handleSubjectChange}>
-            <option value="">All subjects</option>
-            {#each subjects as subject}
-              <option value={subject}>{subject}</option>
-            {/each}
-          </select>
-        </label>
-      </div>
-    {/if}
+  </div>
+
+  <div class="filter-section">
+    <FilterBuilder {subjects} on:change={handleFiltersChange} />
   </div>
 
   {#if error}
@@ -158,7 +151,7 @@
   .controls {
     display: flex;
     gap: 2rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
     padding: 1rem 1.25rem;
     background: var(--bg-light);
     border-radius: 8px;
@@ -167,7 +160,7 @@
     align-items: center;
   }
 
-  .sort-controls, .filter-controls {
+  .sort-controls {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -208,6 +201,14 @@
 
   .sort-dir:hover {
     background: var(--border);
+  }
+
+  .filter-section {
+    margin-bottom: 1.5rem;
+    padding: 1rem 1.25rem;
+    background: var(--bg-light);
+    border-radius: 8px;
+    border: 1px solid var(--border);
   }
 
   .loading, .error {

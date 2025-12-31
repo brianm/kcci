@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { open } from '@tauri-apps/plugin-dialog';
-  import { syncLibrary, type SyncProgress, type SyncStats, type Stats } from '../lib/api';
+  import { syncLibrary, clearMetadata, type SyncProgress, type SyncStats, type Stats } from '../lib/api';
 
   const dispatch = createEventDispatcher();
 
@@ -53,6 +53,28 @@
     };
     return names[stage] || stage;
   }
+
+  async function reEnrich() {
+    syncing = true;
+    progress = null;
+    syncStats = null;
+    error = null;
+
+    try {
+      // Clear all metadata first
+      await clearMetadata();
+
+      // Then sync without a webarchive file (just enriches existing books)
+      syncStats = await syncLibrary(undefined, (p) => {
+        progress = p;
+      });
+      dispatch('complete');
+    } catch (e) {
+      error = String(e);
+    } finally {
+      syncing = false;
+    }
+  }
 </script>
 
 <div class="import-page">
@@ -86,6 +108,17 @@
       {/if}
     </div>
   </button>
+
+  {#if stats && stats.total_books > 0}
+    <div class="reenrich-section">
+      <button class="reenrich-btn" on:click={reEnrich} disabled={syncing}>
+        Re-fetch metadata from OpenLibrary
+      </button>
+      <p class="reenrich-hint">
+        Clears existing metadata and re-fetches from OpenLibrary for all {stats.total_books} books.
+      </p>
+    </div>
+  {/if}
 
   {#if syncing && progress}
     <div class="sync-progress">
@@ -270,5 +303,37 @@
 
   .sync-error p {
     color: #dc2626;
+  }
+
+  .reenrich-section {
+    margin-top: 1.5rem;
+    text-align: center;
+  }
+
+  .reenrich-btn {
+    padding: 0.6rem 1.2rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-light);
+    color: var(--text);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .reenrich-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    background: var(--accent-light);
+  }
+
+  .reenrich-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  .reenrich-hint {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-dim);
   }
 </style>

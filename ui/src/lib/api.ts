@@ -57,12 +57,18 @@ export async function getBook(asin: string): Promise<Book | null> {
     return invoke('get_book', { asin });
 }
 
+export interface Filter {
+    field: 'title' | 'author' | 'description' | 'subject';
+    op: 'contains' | 'has';
+    value: string;
+}
+
 export interface ListBooksOptions {
     page?: number;
     perPage?: number;
     sortBy?: 'title' | 'author' | 'year';
     sortDir?: 'asc' | 'desc';
-    subject?: string;
+    filters?: Filter[];
 }
 
 export async function listBooks(options: ListBooksOptions = {}): Promise<PaginatedBooks> {
@@ -71,6 +77,46 @@ export async function listBooks(options: ListBooksOptions = {}): Promise<Paginat
 
 export async function getSubjects(): Promise<string[]> {
     return invoke('get_subjects');
+}
+
+export async function clearMetadata(): Promise<number> {
+    return invoke('clear_metadata');
+}
+
+export interface ModelStatus {
+    available: boolean;
+    size_mb: number;
+}
+
+export interface DownloadProgress {
+    bytes_downloaded: number;
+    total_bytes: number;
+    percent: number;
+    file: string;
+}
+
+export async function getModelStatus(): Promise<ModelStatus> {
+    return invoke('get_model_status');
+}
+
+export async function downloadModel(
+    onProgress?: (progress: DownloadProgress) => void
+): Promise<void> {
+    let unlisten: UnlistenFn | null = null;
+
+    if (onProgress) {
+        unlisten = await listen<DownloadProgress>('model-download-progress', (event) => {
+            onProgress(event.payload);
+        });
+    }
+
+    try {
+        await invoke('download_model');
+    } finally {
+        if (unlisten) {
+            unlisten();
+        }
+    }
 }
 
 export async function syncLibrary(

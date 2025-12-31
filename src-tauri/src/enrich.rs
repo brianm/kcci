@@ -47,7 +47,7 @@ impl OpenLibrary {
         author: Option<&str>,
     ) -> Result<Option<EnrichmentData>> {
         let mut url = format!(
-            "https://openlibrary.org/search.json?title={}&limit=5",
+            "https://openlibrary.org/search.json?title={}&limit=5&fields=key,title,author_name,subject,isbn,first_publish_year",
             urlencoding::encode(title)
         );
         if let Some(a) = author {

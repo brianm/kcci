@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Once;
 
+use crate::commands::Filter;
 use crate::error::Result;
 
 static SQLITE_VEC_INIT: Once = Once::new();
@@ -246,7 +247,7 @@ impl Database {
         offset: usize,
         sort_by: Option<&str>,
         sort_dir: Option<&str>,
-        subject_filter: Option<&str>,
+        filters: &[Filter],
     ) -> Result<Vec<BookWithMeta>> {
         let order_clause = match sort_by {
             Some("author") => {
@@ -263,11 +264,7 @@ impl Database {
             }
         };
 
-        let where_clause = if subject_filter.is_some() {
-            "WHERE m.subjects LIKE '%' || ?3 || '%'"
-        } else {
-            ""
-        };
+        let (where_clause, params) = build_filter_clause(filters);
 
         let sql = format!(
             "SELECT b.asin, b.title, b.authors, b.cover_url, b.percent_read,
@@ -302,13 +299,19 @@ impl Database {
             })
         }
 
-        let books: Vec<BookWithMeta> = if let Some(filter) = subject_filter {
-            stmt.query_map(params![limit, offset, filter], map_row)?
-                .collect::<std::result::Result<Vec<_>, _>>()?
-        } else {
-            stmt.query_map(params![limit, offset], map_row)?
-                .collect::<std::result::Result<Vec<_>, _>>()?
-        };
+        // Build parameter list: limit, offset, then filter values
+        let mut all_params: Vec<Box<dyn rusqlite::ToSql>> = vec![
+            Box::new(limit),
+            Box::new(offset),
+        ];
+        for p in params {
+            all_params.push(Box::new(p));
+        }
+        let param_refs: Vec<&dyn rusqlite::ToSql> = all_params.iter().map(|p| p.as_ref()).collect();
+
+        let books: Vec<BookWithMeta> = stmt
+            .query_map(param_refs.as_slice(), map_row)?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
 
         Ok(books)
     }
@@ -338,20 +341,28 @@ impl Database {
         Ok(subjects)
     }
 
-    /// Get book count with optional subject filter
-    pub fn get_book_count_filtered(&self, subject_filter: Option<&str>) -> Result<usize> {
-        if let Some(subject) = subject_filter {
-            let count: usize = self.conn.query_row(
-                "SELECT COUNT(*) FROM books b
-                 LEFT JOIN metadata m ON b.asin = m.asin
-                 WHERE m.subjects LIKE '%' || ?1 || '%'",
-                params![subject],
-                |row| row.get(0),
-            )?;
-            Ok(count)
-        } else {
-            self.get_book_count()
+    /// Get book count with optional filters
+    pub fn get_book_count_filtered(&self, filters: &[Filter]) -> Result<usize> {
+        if filters.is_empty() {
+            return self.get_book_count();
         }
+
+        let (where_clause, params) = build_filter_clause_with_offset(filters, 1);
+        let sql = format!(
+            "SELECT COUNT(*) FROM books b
+             LEFT JOIN metadata m ON b.asin = m.asin
+             {}",
+            where_clause
+        );
+
+        let mut all_params: Vec<Box<dyn rusqlite::ToSql>> = vec![];
+        for p in params {
+            all_params.push(Box::new(p));
+        }
+        let param_refs: Vec<&dyn rusqlite::ToSql> = all_params.iter().map(|p| p.as_ref()).collect();
+
+        let count: usize = self.conn.query_row(&sql, param_refs.as_slice(), |row| row.get(0))?;
+        Ok(count)
     }
 
     /// Get a single book by ASIN
@@ -490,6 +501,16 @@ impl Database {
             .query_row("SELECT COUNT(*) FROM books", [], |row| row.get(0))?;
         Ok(count)
     }
+
+    /// Clear all metadata to allow re-enrichment
+    pub fn clear_metadata(&self) -> Result<usize> {
+        let count = self.conn.execute("DELETE FROM metadata", [])?;
+        // Also clear embeddings since they depend on enriched descriptions
+        self.conn.execute("DELETE FROM books_vec", [])?;
+        self.conn.execute("DELETE FROM books_fts_content", [])?;
+        self.conn.execute("INSERT INTO books_fts(books_fts) VALUES('rebuild')", [])?;
+        Ok(count)
+    }
 }
 
 /// Serialize a float32 vector to little-endian binary blob (matches Python struct.pack)
@@ -500,6 +521,59 @@ fn serialize_embedding(vec: &[f32]) -> Vec<u8> {
 /// Parse a JSON array string into Vec<String>
 fn parse_json_array(json: String) -> Vec<String> {
     serde_json::from_str(&json).unwrap_or_default()
+}
+
+/// Build a WHERE clause from a list of filters
+/// Returns (where_clause, params)
+/// start_idx specifies the first parameter index (e.g., 3 if ?1=limit, ?2=offset already used)
+fn build_filter_clause_with_offset(filters: &[Filter], start_idx: usize) -> (String, Vec<String>) {
+    if filters.is_empty() {
+        return (String::new(), Vec::new());
+    }
+
+    let mut conditions = Vec::new();
+    let mut params = Vec::new();
+    let mut param_idx = start_idx;
+
+    for filter in filters {
+        let column = match filter.field.as_str() {
+            "title" => "b.title",
+            "author" => "b.authors",
+            "description" => "m.description",
+            "subject" => "m.subjects",
+            _ => continue, // Skip unknown fields
+        };
+
+        // Build condition based on operation
+        match filter.op.as_str() {
+            "contains" => {
+                // Case-insensitive contains using LIKE
+                conditions.push(format!("{} LIKE '%' || ?{} || '%'", column, param_idx));
+                params.push(filter.value.clone());
+                param_idx += 1;
+            }
+            "has" => {
+                // For subject arrays, match the exact subject in JSON
+                // Use LIKE with quotes to match exact array element
+                conditions.push(format!("{} LIKE '%\"' || ?{} || '\"%'", column, param_idx));
+                params.push(filter.value.clone());
+                param_idx += 1;
+            }
+            _ => continue, // Skip unknown operations
+        }
+    }
+
+    if conditions.is_empty() {
+        return (String::new(), Vec::new());
+    }
+
+    let where_clause = format!("WHERE {}", conditions.join(" AND "));
+    (where_clause, params)
+}
+
+/// Convenience wrapper for get_all_books (params start at ?3)
+fn build_filter_clause(filters: &[Filter]) -> (String, Vec<String>) {
+    build_filter_clause_with_offset(filters, 3)
 }
 
 #[cfg(test)]

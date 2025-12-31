@@ -50,6 +50,9 @@ pub fn run() {
             commands::list_books,
             commands::get_subjects,
             commands::sync_library,
+            commands::clear_metadata,
+            commands::get_model_status,
+            commands::download_model,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
