@@ -82,7 +82,15 @@
       "Bash(cargo test:*)",
       "WebFetch(domain:crates.io)",
       "Bash(git remote:*)",
-      "Bash(cargo install:*)"
+      "Bash(cargo install:*)",
+      "WebFetch(domain:www.googleapis.com)",
+      "WebFetch(domain:www.loc.gov)",
+      "WebFetch(domain:www.goodreads.com)",
+      "WebFetch(domain:www.fantasticfiction.com)",
+      "WebFetch(domain:hardcover.app)",
+      "WebFetch(domain:bookbrainz.org)",
+      "WebFetch(domain:archive.org)",
+      "WebFetch(domain:brave.com)"
     ]
   }
 }
