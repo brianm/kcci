@@ -51,7 +51,7 @@ pub struct DownloadProgress {
 /// HuggingFace model files to download
 const MODEL_FILES: &[(&str, u64)] = &[
     ("model.onnx", 435_826_548),
-    ("tokenizer.json", 711_649),
+    ("tokenizer.json", 466_021),
     ("config.json", 612),
     ("tokenizer_config.json", 1_578),
     ("special_tokens_map.json", 964),
