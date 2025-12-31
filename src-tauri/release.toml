@@ -9,9 +9,8 @@ tag = true
 tag-prefix = "v"
 tag-name = "{{prefix}}{{version}}"
 
-# Commit the version bump
-commit = true
-commit-message = "Release {{version}}"
+# Commit message for the version bump
+pre-release-commit-message = "Release {{version}}"
 
 # Push after release
 push = true

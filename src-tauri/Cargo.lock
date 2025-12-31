@@ -2847,7 +2847,7 @@ dependencies = [
 
 [[package]]
 name = "ook"
-version = "0.1.0"
+version = "0.2.2"
 dependencies = [
  "futures",
  "log",
