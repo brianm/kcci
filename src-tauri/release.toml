@@ -15,8 +15,8 @@ tag-name = "{{prefix}}{{version}}"
 # Commit message for the version bump
 pre-release-commit-message = "Release {{version}}"
 
-# Push after release
-push = true
+# Don't push (jj handles this via bookmarks)
+push = false
 
 # Run pre-release hook to sync ui/package.json
 pre-release-hook = ["../scripts/sync-version.sh", "{{version}}"]
