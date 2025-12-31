@@ -1,3 +1,5 @@
+mod migrations;
+
 use rusqlite::{ffi::sqlite3_auto_extension, params, Connection};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -94,7 +96,7 @@ pub struct Database {
 }
 
 impl Database {
-    /// Open or create the database at the given path
+    /// Open or create the database at the given path, running any pending migrations
     pub fn open(path: PathBuf) -> Result<Self> {
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
@@ -107,17 +109,13 @@ impl Database {
             )));
         });
 
-        let conn = Connection::open(&path)?;
+        let mut conn = Connection::open(&path)?;
 
-        Ok(Self { conn })
-    }
+        // Run migrations (uses PRAGMA user_version to track state)
+        migrations::migrations().to_latest(&mut conn)?;
 
-    /// Initialize the database schema
-    pub fn init_schema(&self) -> Result<()> {
-        self.conn.execute_batch(include_str!("schema.sql"))?;
-
-        // vec0 table needs separate CREATE (can't be in batch)
-        self.conn.execute(
+        // vec0 table needs separate CREATE (can't be in migration due to sqlite-vec extension)
+        conn.execute(
             "CREATE VIRTUAL TABLE IF NOT EXISTS books_vec USING vec0(
                 asin TEXT PRIMARY KEY,
                 embedding FLOAT[768]
@@ -125,7 +123,7 @@ impl Database {
             [],
         )?;
 
-        Ok(())
+        Ok(Self { conn })
     }
 
     /// Import books from webarchive parse result

@@ -27,12 +27,11 @@ pub fn run() {
                 )?;
             }
 
-            // Initialize database
+            // Initialize database (migrations run automatically in open())
             let db_path = get_db_path(app.handle())?;
             log::info!("Opening database at {:?}", db_path);
 
             let database = Database::open(db_path)?;
-            database.init_schema()?;
             log::info!("Database initialized");
 
             app.manage(DbState(Mutex::new(database)));

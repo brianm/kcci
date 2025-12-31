@@ -1,7 +1,4 @@
--- NOTE: This file is kept for reference only.
--- The actual schema is managed by migrations in migrations/v001_initial.sql
--- See migrations.rs for the migration runner.
-
+-- v001: Initial schema
 -- Core book data from Kindle export
 CREATE TABLE IF NOT EXISTS books (
     asin TEXT PRIMARY KEY,
@@ -45,3 +42,6 @@ CREATE TABLE IF NOT EXISTS books_fts_content (
     description TEXT,
     subjects TEXT
 );
+
+-- Note: books_vec (sqlite-vec) table is created separately in Rust code
+-- because it requires the sqlite-vec extension to be loaded first.

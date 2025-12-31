@@ -79,7 +79,8 @@
       "Bash(do lsof -ti :$port)",
       "Bash(done)",
       "Bash(jj abandon:*)",
-      "Bash(cargo test:*)"
+      "Bash(cargo test:*)",
+      "WebFetch(domain:crates.io)"
     ]
   }
 }

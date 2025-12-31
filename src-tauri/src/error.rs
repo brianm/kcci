@@ -6,6 +6,9 @@ pub enum OokError {
     #[error("Database error: {0}")]
     Database(#[from] rusqlite::Error),
 
+    #[error("Migration error: {0}")]
+    Migration(#[from] rusqlite_migration::Error),
+
     #[error("ONNX error: {0}")]
     Onnx(String),
 
