@@ -26,6 +26,7 @@ CREATE VIRTUAL TABLE IF NOT EXISTS books_fts USING fts5(
     title,
     authors,
     description,
+    subjects,
     content='books_fts_content',
     content_rowid='rowid',
     tokenize='porter'
@@ -37,5 +38,6 @@ CREATE TABLE IF NOT EXISTS books_fts_content (
     asin TEXT UNIQUE,
     title TEXT,
     authors TEXT,
-    description TEXT
+    description TEXT,
+    subjects TEXT
 );

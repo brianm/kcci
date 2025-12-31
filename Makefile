@@ -8,6 +8,7 @@ ui:
 
 # Run in development mode
 dev:
+	rm -rf ui/node_modules/.vite
 	cd ui && npm run dev &
 	cargo tauri dev
 
@@ -33,7 +34,7 @@ fmt:
 clean:
 	rm -rf dist build
 	rm -rf src-tauri/target
-	rm -rf ui/dist
+	rm -rf ui/dist ui/node_modules/.vite
 	@echo "Cleaned build artifacts"
 
 # Deep clean including ONNX model

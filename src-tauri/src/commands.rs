@@ -6,7 +6,7 @@ use std::sync::Mutex;
 use futures::StreamExt;
 use tauri::{AppHandle, Emitter, Manager, State};
 
-use crate::db::{BookWithMeta, Database, Stats};
+use crate::db::{BookWithMeta, Database, SearchFilter, Stats};
 use crate::embed;
 use crate::error::Result;
 use crate::sync::{self, SyncStats};
@@ -143,6 +143,40 @@ pub fn list_books(
 pub fn get_subjects(db: State<DbState>) -> Result<Vec<String>> {
     let db = db.0.lock().unwrap();
     db.get_subjects()
+}
+
+/// Browse books with structured filters (search chips)
+#[tauri::command]
+pub fn browse_filtered(
+    db: State<DbState>,
+    filters: Vec<SearchFilter>,
+    page: Option<usize>,
+    per_page: Option<usize>,
+    sort_by: Option<String>,
+    sort_dir: Option<String>,
+) -> Result<PaginatedBooks> {
+    let page = page.unwrap_or(1).max(1);
+    let per_page = per_page.unwrap_or(50);
+    let offset = (page - 1) * per_page;
+
+    let db = db.0.lock().unwrap();
+    let books = db.search_filtered(
+        &filters,
+        per_page,
+        offset,
+        sort_by.as_deref(),
+        sort_dir.as_deref(),
+    )?;
+    let total = db.get_filtered_count(&filters)?;
+    let total_pages = (total + per_page - 1) / per_page;
+
+    Ok(PaginatedBooks {
+        books,
+        page,
+        per_page,
+        total,
+        total_pages,
+    })
 }
 
 /// Sync library: import, enrich, embed

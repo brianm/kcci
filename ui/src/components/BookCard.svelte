@@ -1,15 +1,25 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
   import { open } from '@tauri-apps/plugin-shell';
   import { marked } from 'marked';
   import type { Book } from '../lib/api';
 
-  export let book: Book;
-  export let showScore = false;
-  export let selected = false;
-  export let expanded = false;
+  interface Props {
+    book: Book;
+    showScore?: boolean;
+    selected?: boolean;
+    expanded?: boolean;
+    onclick?: () => void;
+    onmouseenter?: () => void;
+  }
 
-  const dispatch = createEventDispatcher();
+  let {
+    book,
+    showScore = false,
+    selected = false,
+    expanded = false,
+    onclick,
+    onmouseenter
+  }: Props = $props();
 
   async function openExternal(url: string, event: MouseEvent) {
     event.preventDefault();
@@ -44,14 +54,18 @@
   }
 
   function handleClick() {
-    dispatch('click');
+    onclick?.();
   }
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      dispatch('click');
+      onclick?.();
     }
+  }
+
+  function handleMouseEnter() {
+    onmouseenter?.();
   }
 </script>
 
@@ -59,9 +73,9 @@
   class="book-card"
   class:expanded
   class:selected
-  on:click={handleClick}
-  on:keydown={handleKeydown}
-  on:mouseenter={() => dispatch('mouseenter')}
+  onclick={handleClick}
+  onkeydown={handleKeydown}
+  onmouseenter={handleMouseEnter}
   role="button"
   tabindex="-1"
 >
@@ -78,7 +92,8 @@
   {#if expanded}
     <div class="book-details">
       {#if book.description}
-        <div class="book-description" on:click={handleDescriptionClick}>{@html renderDescription()}</div>
+        <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+        <div class="book-description" onclick={handleDescriptionClick}>{@html renderDescription()}</div>
       {/if}
 
       {#if book.subjects.length > 0}
@@ -97,7 +112,7 @@
         {#if book.openlibrary_key}
           <a
             href="https://openlibrary.org{book.openlibrary_key}"
-            on:click={(e) => openExternal(`https://openlibrary.org${book.openlibrary_key}`, e)}
+            onclick={(e) => openExternal(`https://openlibrary.org${book.openlibrary_key}`, e)}
           >
             OpenLibrary
           </a>

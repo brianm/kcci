@@ -1,34 +1,30 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { listBooks, getSubjects, type Book, type PaginatedBooks, type Stats, type ListBooksOptions, type Filter } from '../lib/api';
+  import { browseFiltered, type Book, type Stats, type SearchFilter } from '../lib/api';
   import BookCard from '../components/BookCard.svelte';
-  import FilterBuilder from '../components/FilterBuilder.svelte';
 
-  export let stats: Stats | null = null;
+  interface Props {
+    stats?: Stats | null;
+    filters?: SearchFilter[];
+  }
 
-  let books: Book[] = [];
-  let currentPage = 0;
-  let totalPages = 1;
-  let loading = false;
-  let error: string | null = null;
-  let selectedIndex = -1;
-  let expandedAsin: string | null = null;
-  let sentinel: HTMLElement;
+  let { stats = null, filters = $bindable([]) }: Props = $props();
 
-  // Sorting and filtering state
-  let sortBy: 'title' | 'author' | 'year' = 'title';
-  let sortDir: 'asc' | 'desc' = 'asc';
-  let filters: Filter[] = [];
-  let subjects: string[] = [];
+  let books: Book[] = $state([]);
+  let currentPage = $state(0);
+  let totalPages = $state(1);
+  let loading = $state(false);
+  let error: string | null = $state(null);
+  let selectedIndex = $state(-1);
+  let expandedAsin: string | null = $state(null);
+  let sentinel: HTMLElement | undefined = $state();
+
+  // Sorting state
+  let sortBy: 'title' | 'author' | 'year' = $state('title');
+  let sortDir: 'asc' | 'desc' = $state('asc');
+  let lastFilterJson = $state('');
 
   onMount(async () => {
-    // Load subjects for filter dropdown
-    try {
-      subjects = await getSubjects();
-    } catch (e) {
-      console.error('Failed to load subjects:', e);
-    }
-
     loadMore();
 
     const observer = new IntersectionObserver(
@@ -40,7 +36,9 @@
       { rootMargin: '200px' }
     );
 
-    observer.observe(sentinel);
+    if (sentinel) {
+      observer.observe(sentinel);
+    }
     return () => observer.disconnect();
   });
 
@@ -50,20 +48,18 @@
     loading = true;
     error = null;
     try {
-      const options: ListBooksOptions = {
+      const data = await browseFiltered({
+        filters,
         page: currentPage + 1,
         perPage: 50,
         sortBy,
         sortDir,
-      };
-      if (filters.length > 0) {
-        options.filters = filters;
-      }
-      const data = await listBooks(options);
+      });
       books = [...books, ...data.books];
       currentPage = data.page;
       totalPages = data.total_pages;
     } catch (e) {
+      console.error('Browse: loadMore error:', e);
       error = String(e);
     } finally {
       loading = false;
@@ -77,12 +73,16 @@
     loadMore();
   }
 
-  function handleSortChange() {
-    resetAndReload();
-  }
+  // Watch for filter changes from parent
+  $effect(() => {
+    const filterJson = JSON.stringify(filters);
+    if (filterJson !== lastFilterJson) {
+      lastFilterJson = filterJson;
+      resetAndReload();
+    }
+  });
 
-  function handleFiltersChange(event: CustomEvent<Filter[]>) {
-    filters = event.detail;
+  function handleSortChange() {
     resetAndReload();
   }
 
@@ -106,20 +106,16 @@
     <div class="sort-controls">
       <label>
         Sort by:
-        <select bind:value={sortBy} on:change={handleSortChange}>
+        <select bind:value={sortBy} onchange={handleSortChange}>
           <option value="title">Title</option>
           <option value="author">Author</option>
           <option value="year">Year</option>
         </select>
       </label>
-      <button class="sort-dir" on:click={toggleSortDir} title="Toggle sort direction">
+      <button class="sort-dir" onclick={toggleSortDir} title="Toggle sort direction">
         {sortDir === 'asc' ? '↑' : '↓'}
       </button>
     </div>
-  </div>
-
-  <div class="filter-section">
-    <FilterBuilder {subjects} on:change={handleFiltersChange} />
   </div>
 
   {#if error}
@@ -132,8 +128,8 @@
         {book}
         selected={index === selectedIndex}
         expanded={expandedAsin === book.asin}
-        on:click={() => handleCardClick(index, book.asin)}
-        on:mouseenter={() => handleCardMouseEnter(index)}
+        onclick={() => handleCardClick(index, book.asin)}
+        onmouseenter={() => handleCardMouseEnter(index)}
       />
     {/each}
   </div>
@@ -142,7 +138,9 @@
     {#if loading}
       <p class="loading">Loading...</p>
     {:else if currentPage >= totalPages && books.length > 0}
-      <p class="end">End of library</p>
+      <p class="end">End of library ({books.length} books)</p>
+    {:else if !loading && books.length === 0 && filters.length > 0}
+      <p class="no-results">No books match your filters</p>
     {/if}
   </div>
 </div>
@@ -150,14 +148,9 @@
 <style>
   .controls {
     display: flex;
-    gap: 2rem;
-    margin-bottom: 1rem;
-    padding: 1rem 1.25rem;
-    background: var(--bg-light);
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    flex-wrap: wrap;
     align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
   }
 
   .sort-controls {
@@ -166,7 +159,7 @@
     gap: 0.5rem;
   }
 
-  .controls label {
+  .sort-controls label {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -174,7 +167,7 @@
     color: var(--text-dim);
   }
 
-  .controls select {
+  .sort-controls select {
     padding: 0.4rem 0.6rem;
     border: 1px solid var(--border);
     border-radius: 4px;
@@ -184,7 +177,7 @@
     cursor: pointer;
   }
 
-  .controls select:focus {
+  .sort-controls select:focus {
     outline: none;
     border-color: var(--accent);
   }
@@ -203,15 +196,7 @@
     background: var(--border);
   }
 
-  .filter-section {
-    margin-bottom: 1.5rem;
-    padding: 1rem 1.25rem;
-    background: var(--bg-light);
-    border-radius: 8px;
-    border: 1px solid var(--border);
-  }
-
-  .loading, .error {
+  .loading, .error, .no-results {
     text-align: center;
     padding: 3rem;
     color: var(--text-dim);

@@ -68,6 +68,15 @@ pub struct EnrichmentData {
     pub publish_year: Option<i32>,
 }
 
+/// A single search filter chip
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SearchFilter {
+    /// Field to search: "all", "title", "author", "description", "subject"
+    pub field: String,
+    /// Search term
+    pub value: String,
+}
+
 /// Imported book from webarchive
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImportedBook {
@@ -198,6 +207,155 @@ impl Database {
 
         rows.collect::<std::result::Result<Vec<_>, _>>()
             .map_err(|e| e.into())
+    }
+
+    /// Search with structured filters (chips)
+    /// Each filter is AND-ed together
+    pub fn search_filtered(
+        &self,
+        filters: &[SearchFilter],
+        limit: usize,
+        offset: usize,
+        sort_by: Option<&str>,
+        sort_dir: Option<&str>,
+    ) -> Result<Vec<BookWithMeta>> {
+        if filters.is_empty() {
+            // No filters, return all books
+            return self.get_all_books(limit, offset, sort_by, sort_dir, &[]);
+        }
+
+        // Build FTS MATCH query from filters
+        // FTS5 column filter syntax: column:term or column:"phrase"
+        // Multiple terms are AND-ed by default
+        //
+        // Special handling for "author" field: split into separate terms because
+        // authors are stored as JSON arrays like ["Card", "Orson Scott"] where
+        // name parts aren't adjacent. Other fields use phrase search.
+        let match_parts: Vec<String> = filters
+            .iter()
+            .flat_map(|f| {
+                let escaped_value = f.value.replace('"', "\"\"");
+
+                match f.field.as_str() {
+                    "author" => {
+                        // Split author into words: "orson card" -> authors:"orson" authors:"card"
+                        f.value
+                            .split_whitespace()
+                            .map(|word| {
+                                let escaped = word.replace('"', "\"\"");
+                                format!("authors:\"{}\"", escaped)
+                            })
+                            .collect::<Vec<_>>()
+                    }
+                    "title" => vec![format!("title:\"{}\"", escaped_value)],
+                    "description" => vec![format!("description:\"{}\"", escaped_value)],
+                    "subject" => vec![format!("subjects:\"{}\"", escaped_value)],
+                    // "all" or unknown: search all columns as phrase
+                    _ => vec![format!("\"{}\"", escaped_value)],
+                }
+            })
+            .collect();
+
+        let match_query = match_parts.join(" ");
+
+        let order_clause = match sort_by {
+            Some("author") => {
+                let dir = if sort_dir == Some("desc") { "DESC" } else { "ASC" };
+                format!("json_extract(b.authors, '$[0]') {}", dir)
+            }
+            Some("year") => {
+                let dir = if sort_dir == Some("desc") {
+                    "DESC NULLS LAST"
+                } else {
+                    "ASC NULLS LAST"
+                };
+                format!("m.publish_year {}", dir)
+            }
+            Some("rank") => "rank".to_string(),
+            _ => {
+                let dir = if sort_dir == Some("desc") { "DESC" } else { "ASC" };
+                format!("b.title {}", dir)
+            }
+        };
+
+        let sql = format!(
+            "SELECT b.asin, b.title, b.authors, b.cover_url, b.percent_read,
+                    b.resource_type, b.origin_type,
+                    m.description, m.subjects, m.publish_year, m.isbn, m.openlibrary_key,
+                    bm25(books_fts) as rank
+             FROM books_fts f
+             JOIN books_fts_content c ON f.rowid = c.rowid
+             JOIN books b ON c.asin = b.asin
+             LEFT JOIN metadata m ON b.asin = m.asin
+             WHERE books_fts MATCH ?1
+             ORDER BY {}
+             LIMIT ?2 OFFSET ?3",
+            order_clause
+        );
+
+        let mut stmt = self.conn.prepare(&sql)?;
+
+        let rows = stmt.query_map(params![match_query, limit, offset], |row| {
+            Ok(BookWithMeta {
+                asin: row.get(0)?,
+                title: row.get(1)?,
+                authors: parse_json_array(row.get::<_, String>(2)?),
+                cover_url: row.get(3)?,
+                percent_read: row.get(4)?,
+                resource_type: row.get(5)?,
+                origin_type: row.get(6)?,
+                description: row.get(7)?,
+                subjects: parse_json_array(row.get::<_, Option<String>>(8)?.unwrap_or_default()),
+                publish_year: row.get(9)?,
+                isbn: row.get(10)?,
+                openlibrary_key: row.get(11)?,
+                distance: None,
+                rank: row.get(12)?,
+            })
+        })?;
+
+        rows.collect::<std::result::Result<Vec<_>, _>>()
+            .map_err(|e| e.into())
+    }
+
+    /// Get count of books matching filters
+    pub fn get_filtered_count(&self, filters: &[SearchFilter]) -> Result<usize> {
+        if filters.is_empty() {
+            return self.get_book_count();
+        }
+
+        // Same logic as search_filtered: only split author field
+        let match_parts: Vec<String> = filters
+            .iter()
+            .flat_map(|f| {
+                let escaped_value = f.value.replace('"', "\"\"");
+
+                match f.field.as_str() {
+                    "author" => f
+                        .value
+                        .split_whitespace()
+                        .map(|word| {
+                            let escaped = word.replace('"', "\"\"");
+                            format!("authors:\"{}\"", escaped)
+                        })
+                        .collect::<Vec<_>>(),
+                    "title" => vec![format!("title:\"{}\"", escaped_value)],
+                    "description" => vec![format!("description:\"{}\"", escaped_value)],
+                    "subject" => vec![format!("subjects:\"{}\"", escaped_value)],
+                    _ => vec![format!("\"{}\"", escaped_value)],
+                }
+            })
+            .collect();
+
+        let match_query = match_parts.join(" ");
+
+        let count: usize = self.conn.query_row(
+            "SELECT COUNT(*) FROM books_fts WHERE books_fts MATCH ?1",
+            params![match_query],
+            |row| row.get(0),
+        )?;
+
+        Ok(count)
     }
 
     /// Semantic search using vector similarity
@@ -483,8 +641,8 @@ impl Database {
     pub fn rebuild_fts(&self) -> Result<()> {
         self.conn.execute("DELETE FROM books_fts_content", [])?;
         self.conn.execute(
-            "INSERT INTO books_fts_content (asin, title, authors, description)
-             SELECT b.asin, b.title, b.authors, COALESCE(m.description, '')
+            "INSERT INTO books_fts_content (asin, title, authors, description, subjects)
+             SELECT b.asin, b.title, b.authors, COALESCE(m.description, ''), COALESCE(m.subjects, '')
              FROM books b
              LEFT JOIN metadata m ON b.asin = m.asin",
             [],

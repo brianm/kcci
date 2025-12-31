@@ -1,14 +1,17 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
-  import { getStats, type Stats } from './lib/api';
+  import { getStats, type Stats, type SearchFilter } from './lib/api';
   import Search from './routes/Search.svelte';
   import Browse from './routes/Browse.svelte';
   import Import from './routes/Import.svelte';
+  import SearchChips from './components/SearchChips.svelte';
 
-  let currentRoute = 'search';
-  let stats: Stats | null = null;
-  let query = '';
-  let searchInput: HTMLInputElement;
+  let currentRoute = $state('search');
+  let stats: Stats | null = $state(null);
+  let query = $state('');
+  let searchInput: HTMLInputElement | undefined = $state();
+  let browseInput: HTMLInputElement | undefined = $state();
+  let browseFilters: SearchFilter[] = $state([]);
 
   onMount(async () => {
     try {
@@ -25,10 +28,13 @@
     }
   });
 
-  function navigate(route: string) {
+  function navigate(route: string, e: MouseEvent) {
+    e.preventDefault();
     currentRoute = route;
     if (route === 'search') {
       tick().then(() => searchInput?.focus());
+    } else if (route === 'browse') {
+      tick().then(() => browseInput?.focus());
     }
   }
 
@@ -47,21 +53,27 @@
         bind:value={query}
         placeholder="Search your library..."
       />
+    {:else if currentRoute === 'browse'}
+      <SearchChips
+        bind:filters={browseFilters}
+        bind:inputElement={browseInput}
+        placeholder="Filter... (author:, title:, subject:)"
+      />
     {/if}
     <nav>
-      <a href="#/" class:active={currentRoute === 'search'} on:click|preventDefault={() => navigate('search')}>Search</a>
-      <a href="#/books" class:active={currentRoute === 'browse'} on:click|preventDefault={() => navigate('browse')}>Browse</a>
-      <a href="#/import" class:active={currentRoute === 'import'} on:click|preventDefault={() => navigate('import')}>Import</a>
+      <a href="#/" class:active={currentRoute === 'search'} onclick={(e) => navigate('search', e)}>Search</a>
+      <a href="#/books" class:active={currentRoute === 'browse'} onclick={(e) => navigate('browse', e)}>Browse</a>
+      <a href="#/import" class:active={currentRoute === 'import'} onclick={(e) => navigate('import', e)}>Import</a>
     </nav>
   </header>
 
   <main>
     {#if currentRoute === 'search'}
-      <Search {query} {searchInput} />
+      <Search {query} bind:searchInput />
     {:else if currentRoute === 'browse'}
-      <Browse {stats} />
+      <Browse {stats} bind:filters={browseFilters} />
     {:else if currentRoute === 'import'}
-      <Import {stats} on:complete={refreshStats} />
+      <Import {stats} oncomplete={refreshStats} />
     {/if}
   </main>
 </div>
@@ -112,7 +124,8 @@
 
   .header-search {
     flex: 1;
-    padding: 0.5rem 0.75rem;
+    height: 38px;
+    padding: 0 0.75rem;
     border: 1px solid var(--border);
     border-radius: 6px;
     background: var(--bg-light);

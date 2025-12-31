@@ -49,6 +49,7 @@ pub fn run() {
             commands::get_book,
             commands::list_books,
             commands::get_subjects,
+            commands::browse_filtered,
             commands::sync_library,
             commands::clear_metadata,
             commands::get_model_status,

@@ -72,7 +72,13 @@
       "Bash(cargo update:*)",
       "Bash(cargo generate-lockfile:*)",
       "Bash(cargo search:*)",
-      "Bash(security find-identity:*)"
+      "Bash(security find-identity:*)",
+      "WebFetch(domain:next.melt-ui.com)",
+      "Bash(npm uninstall:*)",
+      "Bash(for port in 5173 5174 5175 5176 5177 5178 5179 5180 5181)",
+      "Bash(do lsof -ti :$port)",
+      "Bash(done)",
+      "Bash(jj abandon:*)"
     ]
   }
 }

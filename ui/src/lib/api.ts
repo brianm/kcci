@@ -119,6 +119,25 @@ export async function downloadModel(
     }
 }
 
+/** A single search filter chip */
+export interface SearchFilter {
+    /** Field to search: "all", "title", "author", "description", "subject" */
+    field: string;
+    /** Search term */
+    value: string;
+}
+
+export interface BrowseFilteredOptions {
+    filters: SearchFilter[];
+    page?: number;
+    perPage?: number;
+    sortBy?: 'title' | 'author' | 'year' | 'rank';
+    sortDir?: 'asc' | 'desc';
+}
+
+export async function browseFiltered(options: BrowseFilteredOptions): Promise<PaginatedBooks> {
+    return invoke('browse_filtered', options);
+}
 export async function syncLibrary(
     webarchivePath?: string,
     onProgress?: (progress: SyncProgress) => void

@@ -1,17 +1,19 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
   import { open } from '@tauri-apps/plugin-dialog';
   import { syncLibrary, clearMetadata, type SyncProgress, type SyncStats, type Stats } from '../lib/api';
   import ModelManager from '../components/ModelManager.svelte';
 
-  const dispatch = createEventDispatcher();
+  interface Props {
+    stats?: Stats | null;
+    oncomplete?: () => void;
+  }
 
-  export let stats: Stats | null = null;
+  let { stats = null, oncomplete }: Props = $props();
 
-  let syncing = false;
-  let progress: SyncProgress | null = null;
-  let syncStats: SyncStats | null = null;
-  let error: string | null = null;
+  let syncing = $state(false);
+  let progress: SyncProgress | null = $state(null);
+  let syncStats: SyncStats | null = $state(null);
+  let error: string | null = $state(null);
 
   async function selectFile() {
     const path = await open({
@@ -33,7 +35,7 @@
       syncStats = await syncLibrary(path, (p) => {
         progress = p;
       });
-      dispatch('complete');
+      oncomplete?.();
     } catch (e) {
       error = String(e);
     } finally {
@@ -69,7 +71,7 @@
       syncStats = await syncLibrary(undefined, (p) => {
         progress = p;
       });
-      dispatch('complete');
+      oncomplete?.();
     } catch (e) {
       error = String(e);
     } finally {
@@ -99,7 +101,7 @@
     </ol>
   </div>
 
-  <button class="import-zone" on:click={selectFile} disabled={syncing}>
+  <button class="import-zone" onclick={selectFile} disabled={syncing}>
     <div class="import-zone-icon">📁</div>
     <div class="import-zone-text">
       {#if syncing}
@@ -112,7 +114,7 @@
 
   {#if stats && stats.total_books > 0}
     <div class="reenrich-section">
-      <button class="reenrich-btn" on:click={reEnrich} disabled={syncing}>
+      <button class="reenrich-btn" onclick={reEnrich} disabled={syncing}>
         Re-fetch metadata from OpenLibrary
       </button>
       <p class="reenrich-hint">
@@ -121,7 +123,7 @@
     </div>
   {/if}
 
-  <ModelManager on:downloaded={() => dispatch('complete')} />
+  <ModelManager ondownloaded={() => oncomplete?.()} />
 
   {#if syncing && progress}
     <div class="sync-progress">

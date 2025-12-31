@@ -3,16 +3,20 @@
   import { search, getModelStatus, type Book } from '../lib/api';
   import BookCard from '../components/BookCard.svelte';
 
-  export let query = '';
-  export let searchInput: HTMLInputElement | undefined = undefined;
+  interface Props {
+    query?: string;
+    searchInput?: HTMLInputElement;
+  }
 
-  let results: Book[] = [];
-  let loading = false;
+  let { query = '', searchInput = $bindable() }: Props = $props();
+
+  let results: Book[] = $state([]);
+  let loading = $state(false);
   let debounceTimer: ReturnType<typeof setTimeout>;
-  let selectedIndex = -1;
-  let expandedAsin: string | null = null;
-  let resultsContainer: HTMLElement;
-  let modelAvailable = true; // Assume available, check on mount
+  let selectedIndex = $state(-1);
+  let expandedAsin: string | null = $state(null);
+  let resultsContainer: HTMLElement | undefined = $state();
+  let modelAvailable = $state(true); // Assume available, check on mount
 
   onMount(async () => {
     try {
@@ -24,11 +28,12 @@
     }
   });
 
-  $: {
+  $effect(() => {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(doSearch, 300);
-    query; // dependency
-  }
+    // Track query as dependency
+    query;
+  });
 
   async function doSearch() {
     if (!query.trim()) {
@@ -94,7 +99,7 @@
   }
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} />
 
 {#if !modelAvailable}
   <p class="model-notice">Using keyword search. <a href="#import">Download the model</a> to enable semantic search.</p>
@@ -113,8 +118,8 @@
       showScore={true}
       selected={index === selectedIndex}
       expanded={expandedAsin === book.asin}
-      on:click={() => handleCardClick(index, book.asin)}
-      on:mouseenter={() => handleCardMouseEnter(index)}
+      onclick={() => handleCardClick(index, book.asin)}
+      onmouseenter={() => handleCardMouseEnter(index)}
     />
   {/each}
 </div>

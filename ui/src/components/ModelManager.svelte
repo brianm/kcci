@@ -1,13 +1,17 @@
 <script lang="ts">
-  import { onMount, createEventDispatcher } from 'svelte';
+  import { onMount } from 'svelte';
   import { getModelStatus, downloadModel, type ModelStatus, type DownloadProgress } from '../lib/api';
 
-  const dispatch = createEventDispatcher();
+  interface Props {
+    ondownloaded?: () => void;
+  }
 
-  let status: ModelStatus | null = null;
-  let downloading = false;
-  let progress: DownloadProgress | null = null;
-  let error: string | null = null;
+  let { ondownloaded }: Props = $props();
+
+  let status: ModelStatus | null = $state(null);
+  let downloading = $state(false);
+  let progress: DownloadProgress | null = $state(null);
+  let error: string | null = $state(null);
 
   onMount(async () => {
     await checkStatus();
@@ -31,7 +35,7 @@
         progress = p;
       });
       await checkStatus();
-      dispatch('downloaded');
+      ondownloaded?.();
     } catch (e) {
       error = String(e);
     } finally {
@@ -78,7 +82,7 @@
     <p class="hint">
       Download the embedding model (~{status.size_mb} MB) to enable semantic search across your library.
     </p>
-    <button class="download-btn" on:click={startDownload}>
+    <button class="download-btn" onclick={startDownload}>
       Download Model
     </button>
   {/if}
