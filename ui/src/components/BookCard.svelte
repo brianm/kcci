@@ -92,8 +92,13 @@
   {#if expanded}
     <div class="book-details">
       {#if book.description}
-        <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-        <div class="book-description" onclick={handleDescriptionClick}>{@html renderDescription()}</div>
+        <div
+          class="book-description"
+          onclick={handleDescriptionClick}
+          onkeydown={(e) => e.key === 'Enter' && handleDescriptionClick(e)}
+          role="button"
+          tabindex="0"
+        >{@html renderDescription()}</div>
       {/if}
 
       {#if book.subjects.length > 0}

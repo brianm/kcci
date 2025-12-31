@@ -2,9 +2,28 @@ use plist::Value;
 use regex::Regex;
 use std::collections::HashSet;
 use std::path::Path;
+use std::sync::OnceLock;
 
 use crate::db::ImportedBook;
 use crate::error::{KcciError, Result};
+
+// Static regexes for HTML parsing (compiled once)
+static SCRIPT_RE: OnceLock<Regex> = OnceLock::new();
+static COVER_RE: OnceLock<Regex> = OnceLock::new();
+
+fn get_script_regex() -> &'static Regex {
+    SCRIPT_RE.get_or_init(|| {
+        // (?s) enables DOTALL mode so . matches newlines
+        Regex::new(r#"(?s)<script[^>]*id="itemViewResponse"[^>]*>(.*?)</script>"#)
+            .expect("Invalid script regex")
+    })
+}
+
+fn get_cover_regex() -> &'static Regex {
+    COVER_RE.get_or_init(|| {
+        Regex::new(r#"id="coverContainer-([A-Z0-9]+)""#).expect("Invalid cover regex")
+    })
+}
 
 /// Parse a Safari webarchive file and extract Kindle library books
 pub fn parse_webarchive(path: &Path) -> Result<Vec<ImportedBook>> {
@@ -36,10 +55,7 @@ fn extract_books_from_html(html: &str) -> Result<Vec<ImportedBook>> {
     let mut seen_asins = HashSet::new();
 
     // Strategy 1: Look for itemViewResponse JSON embedded in the page
-    let script_re =
-        Regex::new(r#"<script[^>]*id="itemViewResponse"[^>]*>(.*?)</script>"#).unwrap();
-
-    if let Some(cap) = script_re.captures(html) {
+    if let Some(cap) = get_script_regex().captures(html) {
         if let Ok(data) = serde_json::from_str::<serde_json::Value>(&cap[1]) {
             if let Some(items) = data.get("itemsList").and_then(|v| v.as_array()) {
                 for item in items {
@@ -81,9 +97,7 @@ fn extract_books_from_html(html: &str) -> Result<Vec<ImportedBook>> {
     }
 
     // Strategy 2: Extract from DOM elements (for lazy-loaded content)
-    let cover_re = Regex::new(r#"id="coverContainer-([A-Z0-9]+)""#).unwrap();
-
-    for cap in cover_re.captures_iter(html) {
+    for cap in get_cover_regex().captures_iter(html) {
         let asin = cap[1].to_string();
         if seen_asins.contains(&asin) {
             continue;

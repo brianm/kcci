@@ -106,12 +106,13 @@
   }
 </script>
 
+<!-- svelte-ignore a11y_click_events_have_key_events -->
 <div class="search-chips-container" onclick={handleContainerClick} role="textbox" tabindex="-1">
   {#each filters as filter, index}
-    <span class="chip" ondblclick={() => editChip(index)} title="Double-click to edit">
+    <button class="chip" type="button" ondblclick={() => editChip(index)} title="Double-click to edit">
       <span class="chip-text">{formatChip(filter)}</span>
-      <button class="chip-remove" onclick={() => removeChip(index)} type="button">×</button>
-    </span>
+      <span class="chip-remove" onclick={() => removeChip(index)} role="button" tabindex="-1">×</span>
+    </button>
   {/each}
 
   <div class="input-wrapper">

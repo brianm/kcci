@@ -1,5 +1,6 @@
 use regex::Regex;
 use reqwest::blocking::Client;
+use std::sync::OnceLock;
 use std::thread;
 use std::time::Duration;
 
@@ -8,6 +9,18 @@ use crate::error::Result;
 
 const USER_AGENT: &str = "KCCI/1.0 (https://github.com/brianm/kcci; brianm@skife.org)";
 const DEFAULT_DELAY: Duration = Duration::from_millis(250);
+
+// Static regexes for title normalization (compiled once)
+static PARENTHETICAL_RE: OnceLock<Regex> = OnceLock::new();
+static SUBTITLE_RE: OnceLock<Regex> = OnceLock::new();
+
+fn get_parenthetical_regex() -> &'static Regex {
+    PARENTHETICAL_RE.get_or_init(|| Regex::new(r"\s*\([^)]*\)").expect("Invalid parenthetical regex"))
+}
+
+fn get_subtitle_regex() -> &'static Regex {
+    SUBTITLE_RE.get_or_init(|| Regex::new(r":.*$").expect("Invalid subtitle regex"))
+}
 
 /// OpenLibrary API client with rate limiting
 pub struct OpenLibrary {
@@ -54,12 +67,11 @@ impl OpenLibrary {
             url.push_str(&format!("&author={}", urlencoding::encode(a)));
         }
 
-        let response = self.request_with_backoff(&url)?;
-        if response.is_none() {
+        let Some(response) = self.request_with_backoff(&url)? else {
             return Ok(None);
-        }
+        };
 
-        let data: serde_json::Value = response.unwrap().json()?;
+        let data: serde_json::Value = response.json()?;
         let docs = data.get("docs").and_then(|d| d.as_array());
 
         if let Some(docs) = docs {
@@ -165,10 +177,8 @@ impl OpenLibrary {
 
 /// Normalize title for API search (remove series info, subtitles)
 fn normalize_title(title: &str) -> String {
-    let re1 = Regex::new(r"\s*\([^)]*\)").unwrap();
-    let re2 = Regex::new(r":.*$").unwrap();
-    let cleaned = re1.replace_all(title, "");
-    re2.replace_all(&cleaned, "").trim().to_string()
+    let cleaned = get_parenthetical_regex().replace_all(title, "");
+    get_subtitle_regex().replace_all(&cleaned, "").trim().to_string()
 }
 
 /// Normalize author name (convert "Last, First" to "First Last")

@@ -1,7 +1,12 @@
 <script lang="ts">
   import { open } from '@tauri-apps/plugin-dialog';
+  import { Command } from '@tauri-apps/plugin-shell';
   import { syncLibrary, clearMetadata, type SyncProgress, type SyncStats, type Stats } from '../lib/api';
   import ModelManager from '../components/ModelManager.svelte';
+
+  async function openInSafari(url: string) {
+    await Command.create('open-safari', ['-a', 'Safari', url]).execute();
+  }
 
   interface Props {
     stats?: Stats | null;
@@ -92,7 +97,7 @@
   <div class="instructions">
     <h3>How to get your Kindle library webarchive:</h3>
     <ol>
-      <li>Open Safari and go to <a href="https://read.amazon.com" target="_blank" rel="noopener">read.amazon.com</a></li>
+      <li>Open Safari and go to <button class="link-button" onclick={() => openInSafari('https://read.amazon.com')}>read.amazon.com</button></li>
       <li>Sign in with your Amazon account</li>
       <li><strong>Scroll down repeatedly</strong> until all your books are loaded (the page lazy-loads as you scroll)</li>
       <li>From the menu bar, choose <strong>File &gt; Save As...</strong></li>
@@ -187,8 +192,19 @@
     line-height: 1.6;
   }
 
-  .instructions a {
+  .link-button {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
     color: var(--accent);
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  .link-button:hover {
+    color: var(--accent-hover, var(--accent));
   }
 
   .import-zone {

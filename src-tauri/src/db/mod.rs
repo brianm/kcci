@@ -186,24 +186,7 @@ impl Database {
              LIMIT ?2",
         )?;
 
-        let rows = stmt.query_map(params![query, limit], |row| {
-            Ok(BookWithMeta {
-                asin: row.get(0)?,
-                title: row.get(1)?,
-                authors: parse_json_array(row.get::<_, String>(2)?),
-                cover_url: row.get(3)?,
-                percent_read: row.get(4)?,
-                resource_type: row.get(5)?,
-                origin_type: row.get(6)?,
-                description: row.get(7)?,
-                subjects: parse_json_array(row.get::<_, Option<String>>(8)?.unwrap_or_default()),
-                publish_year: row.get(9)?,
-                isbn: row.get(10)?,
-                openlibrary_key: row.get(11)?,
-                distance: None,
-                rank: row.get(12)?,
-            })
-        })?;
+        let rows = stmt.query_map(params![query, limit], map_book_row_with_rank)?;
 
         rows.collect::<std::result::Result<Vec<_>, _>>()
             .map_err(|e| e.into())
@@ -295,24 +278,7 @@ impl Database {
 
         let mut stmt = self.conn.prepare(&sql)?;
 
-        let rows = stmt.query_map(params![match_query, limit, offset], |row| {
-            Ok(BookWithMeta {
-                asin: row.get(0)?,
-                title: row.get(1)?,
-                authors: parse_json_array(row.get::<_, String>(2)?),
-                cover_url: row.get(3)?,
-                percent_read: row.get(4)?,
-                resource_type: row.get(5)?,
-                origin_type: row.get(6)?,
-                description: row.get(7)?,
-                subjects: parse_json_array(row.get::<_, Option<String>>(8)?.unwrap_or_default()),
-                publish_year: row.get(9)?,
-                isbn: row.get(10)?,
-                openlibrary_key: row.get(11)?,
-                distance: None,
-                rank: row.get(12)?,
-            })
-        })?;
+        let rows = stmt.query_map(params![match_query, limit, offset], map_book_row_with_rank)?;
 
         rows.collect::<std::result::Result<Vec<_>, _>>()
             .map_err(|e| e.into())
@@ -375,24 +341,7 @@ impl Database {
              ORDER BY distance",
         )?;
 
-        let rows = stmt.query_map(params![blob, limit], |row| {
-            Ok(BookWithMeta {
-                asin: row.get(0)?,
-                title: row.get(1)?,
-                authors: parse_json_array(row.get::<_, String>(2)?),
-                cover_url: row.get(3)?,
-                percent_read: row.get(4)?,
-                resource_type: row.get(5)?,
-                origin_type: row.get(6)?,
-                description: row.get(7)?,
-                subjects: parse_json_array(row.get::<_, Option<String>>(8)?.unwrap_or_default()),
-                publish_year: row.get(9)?,
-                isbn: row.get(10)?,
-                openlibrary_key: row.get(11)?,
-                distance: row.get(12)?,
-                rank: None,
-            })
-        })?;
+        let rows = stmt.query_map(params![blob, limit], map_book_row_with_distance)?;
 
         rows.collect::<std::result::Result<Vec<_>, _>>()
             .map_err(|e| e.into())
@@ -438,25 +387,6 @@ impl Database {
 
         let mut stmt = self.conn.prepare(&sql)?;
 
-        fn map_row(row: &rusqlite::Row) -> rusqlite::Result<BookWithMeta> {
-            Ok(BookWithMeta {
-                asin: row.get(0)?,
-                title: row.get(1)?,
-                authors: parse_json_array(row.get::<_, String>(2)?),
-                cover_url: row.get(3)?,
-                percent_read: row.get(4)?,
-                resource_type: row.get(5)?,
-                origin_type: row.get(6)?,
-                description: row.get(7)?,
-                subjects: parse_json_array(row.get::<_, Option<String>>(8)?.unwrap_or_default()),
-                publish_year: row.get(9)?,
-                isbn: row.get(10)?,
-                openlibrary_key: row.get(11)?,
-                distance: None,
-                rank: None,
-            })
-        }
-
         // Build parameter list: limit, offset, then filter values
         let mut all_params: Vec<Box<dyn rusqlite::ToSql>> = vec![
             Box::new(limit),
@@ -468,7 +398,7 @@ impl Database {
         let param_refs: Vec<&dyn rusqlite::ToSql> = all_params.iter().map(|p| p.as_ref()).collect();
 
         let books: Vec<BookWithMeta> = stmt
-            .query_map(param_refs.as_slice(), map_row)?
+            .query_map(param_refs.as_slice(), map_book_row)?
             .collect::<std::result::Result<Vec<_>, _>>()?;
 
         Ok(books)
@@ -534,24 +464,7 @@ impl Database {
              WHERE b.asin = ?1",
         )?;
 
-        let mut rows = stmt.query_map(params![asin], |row| {
-            Ok(BookWithMeta {
-                asin: row.get(0)?,
-                title: row.get(1)?,
-                authors: parse_json_array(row.get::<_, String>(2)?),
-                cover_url: row.get(3)?,
-                percent_read: row.get(4)?,
-                resource_type: row.get(5)?,
-                origin_type: row.get(6)?,
-                description: row.get(7)?,
-                subjects: parse_json_array(row.get::<_, Option<String>>(8)?.unwrap_or_default()),
-                publish_year: row.get(9)?,
-                isbn: row.get(10)?,
-                openlibrary_key: row.get(11)?,
-                distance: None,
-                rank: None,
-            })
-        })?;
+        let mut rows = stmt.query_map(params![asin], map_book_row)?;
 
         match rows.next() {
             Some(Ok(book)) => Ok(Some(book)),
@@ -679,6 +592,47 @@ fn serialize_embedding(vec: &[f32]) -> Vec<u8> {
 /// Parse a JSON array string into Vec<String>
 fn parse_json_array(json: String) -> Vec<String> {
     serde_json::from_str(&json).unwrap_or_default()
+}
+
+/// Parse optional JSON string to Vec<String> (handles NULL from database)
+fn parse_optional_json_array(json: Option<String>) -> Vec<String> {
+    json.map(parse_json_array).unwrap_or_default()
+}
+
+/// Map a database row to BookWithMeta (base columns 0-11)
+/// Columns: asin, title, authors, cover_url, percent_read, resource_type, origin_type,
+///          description, subjects, publish_year, isbn, openlibrary_key
+fn map_book_row(row: &rusqlite::Row) -> rusqlite::Result<BookWithMeta> {
+    Ok(BookWithMeta {
+        asin: row.get(0)?,
+        title: row.get(1)?,
+        authors: parse_json_array(row.get::<_, String>(2)?),
+        cover_url: row.get(3)?,
+        percent_read: row.get(4)?,
+        resource_type: row.get(5)?,
+        origin_type: row.get(6)?,
+        description: row.get(7)?,
+        subjects: parse_optional_json_array(row.get(8)?),
+        publish_year: row.get(9)?,
+        isbn: row.get(10)?,
+        openlibrary_key: row.get(11)?,
+        distance: None,
+        rank: None,
+    })
+}
+
+/// Map a database row to BookWithMeta with rank (column 12)
+fn map_book_row_with_rank(row: &rusqlite::Row) -> rusqlite::Result<BookWithMeta> {
+    let mut book = map_book_row(row)?;
+    book.rank = row.get(12)?;
+    Ok(book)
+}
+
+/// Map a database row to BookWithMeta with distance (column 12)
+fn map_book_row_with_distance(row: &rusqlite::Row) -> rusqlite::Result<BookWithMeta> {
+    let mut book = map_book_row(row)?;
+    book.distance = row.get(12)?;
+    Ok(book)
 }
 
 /// Build a WHERE clause from a list of filters

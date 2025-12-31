@@ -78,7 +78,8 @@
       "Bash(for port in 5173 5174 5175 5176 5177 5178 5179 5180 5181)",
       "Bash(do lsof -ti :$port)",
       "Bash(done)",
-      "Bash(jj abandon:*)"
+      "Bash(jj abandon:*)",
+      "Bash(cargo test:*)"
     ]
   }
 }

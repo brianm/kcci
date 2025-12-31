@@ -13,6 +13,12 @@
         {
           "name": "binaries/kcci-server",
           "sidecar": true
+        },
+        {
+          "name": "open-safari",
+          "cmd": "open",
+          "args": ["-a", "Safari", { "validator": "^https://.*$" }],
+          "sidecar": false
         }
       ]
     }
