@@ -173,10 +173,21 @@ pub fn sync(
     let books_to_embed = db.get_books_for_embedding()?;
     let total_to_embed = books_to_embed.len();
 
+    // Check if model exists before attempting to embed
+    let model_path = model_dir.join("model.onnx");
+    let model_available = model_path.exists();
+
     if total_to_embed == 0 {
         emit(SyncProgress {
             stage: "embed".into(),
             message: "All enriched books already have embeddings".into(),
+            current: None,
+            total: None,
+        });
+    } else if !model_available {
+        emit(SyncProgress {
+            stage: "embed".into(),
+            message: "Skipping embeddings (model not downloaded)".into(),
             current: None,
             total: None,
         });

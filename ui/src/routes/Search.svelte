@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { tick } from 'svelte';
-  import { search, type Book } from '../lib/api';
+  import { onMount, tick } from 'svelte';
+  import { search, getModelStatus, type Book } from '../lib/api';
   import BookCard from '../components/BookCard.svelte';
 
   export let query = '';
@@ -12,6 +12,17 @@
   let selectedIndex = -1;
   let expandedAsin: string | null = null;
   let resultsContainer: HTMLElement;
+  let modelAvailable = true; // Assume available, check on mount
+
+  onMount(async () => {
+    try {
+      const status = await getModelStatus();
+      modelAvailable = status.available;
+    } catch (e) {
+      console.error('Failed to check model status:', e);
+      modelAvailable = false;
+    }
+  });
 
   $: {
     clearTimeout(debounceTimer);
@@ -29,7 +40,9 @@
 
     loading = true;
     try {
-      results = await search(query, 'semantic');
+      // Use semantic search if model available, otherwise fall back to FTS
+      const mode = modelAvailable ? 'semantic' : 'fts';
+      results = await search(query, mode);
       selectedIndex = results.length > 0 ? 0 : -1;
       expandedAsin = null;
     } catch (e) {
@@ -83,6 +96,10 @@
 
 <svelte:window on:keydown={handleKeydown} />
 
+{#if !modelAvailable}
+  <p class="model-notice">Using keyword search. <a href="#import">Download the model</a> to enable semantic search.</p>
+{/if}
+
 {#if loading}
   <p class="status">Searching...</p>
 {:else if results.length > 0}
@@ -103,6 +120,20 @@
 </div>
 
 <style>
+  .model-notice {
+    background: var(--bg-light);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    color: var(--text-dim);
+  }
+
+  .model-notice a {
+    color: var(--accent);
+  }
+
   .status, .results-count {
     color: var(--text-dim);
     margin-bottom: 1rem;

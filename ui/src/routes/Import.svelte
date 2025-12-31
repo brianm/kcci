@@ -2,6 +2,7 @@
   import { createEventDispatcher } from 'svelte';
   import { open } from '@tauri-apps/plugin-dialog';
   import { syncLibrary, clearMetadata, type SyncProgress, type SyncStats, type Stats } from '../lib/api';
+  import ModelManager from '../components/ModelManager.svelte';
 
   const dispatch = createEventDispatcher();
 
@@ -119,6 +120,8 @@
       </p>
     </div>
   {/if}
+
+  <ModelManager on:downloaded={() => dispatch('complete')} />
 
   {#if syncing && progress}
     <div class="sync-progress">
