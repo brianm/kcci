@@ -1,6 +1,6 @@
 [package]
 name = "ook"
-version = "0.2.2"
+version = "0.3.0"
 description = "A personal book catalog with semantic search"
 authors = ["Brian McCallister <brianm@skife.org>"]
 license = "Apache-2.0"
