@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { open } from '@tauri-apps/plugin-dialog';
+  import { open, save } from '@tauri-apps/plugin-dialog';
   import { Command } from '@tauri-apps/plugin-shell';
-  import { syncLibrary, clearMetadata, type SyncProgress, type SyncStats, type Stats } from '../lib/api';
+  import { syncLibrary, clearMetadata, exportCsv, type SyncProgress, type SyncStats, type Stats } from '../lib/api';
   import ModelManager from '../components/ModelManager.svelte';
 
   async function openInSafari(url: string) {
@@ -19,6 +19,9 @@
   let progress: SyncProgress | null = $state(null);
   let syncStats: SyncStats | null = $state(null);
   let error: string | null = $state(null);
+
+  let includeEnrichment = $state(false);
+  let exporting = $state(false);
 
   async function selectFile() {
     const path = await open({
@@ -83,6 +86,26 @@
       syncing = false;
     }
   }
+
+  async function exportLibrary() {
+    const path = await save({
+      filters: [{ name: 'CSV', extensions: ['csv'] }],
+      defaultPath: 'ook-library.csv'
+    });
+
+    if (!path) return;
+
+    exporting = true;
+    error = null;
+
+    try {
+      await exportCsv(path, includeEnrichment);
+    } catch (e) {
+      error = String(e);
+    } finally {
+      exporting = false;
+    }
+  }
 </script>
 
 <div class="import-page">
@@ -124,6 +147,21 @@
       </button>
       <p class="reenrich-hint">
         Clears existing metadata and re-fetches from OpenLibrary for all {stats.total_books} books.
+      </p>
+    </div>
+
+    <div class="export-section">
+      <div class="export-controls">
+        <button class="export-btn" onclick={exportLibrary} disabled={exporting || syncing}>
+          {exporting ? 'Exporting...' : 'Export to CSV'}
+        </button>
+        <label class="export-checkbox">
+          <input type="checkbox" bind:checked={includeEnrichment} disabled={exporting} />
+          Include enrichment data
+        </label>
+      </div>
+      <p class="export-hint">
+        Export your library to a CSV file. Enrichment data includes descriptions, subjects, and OpenLibrary metadata.
       </p>
     </div>
   {/if}
@@ -353,6 +391,58 @@
   }
 
   .reenrich-hint {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+  }
+
+  .export-section {
+    margin-top: 1.5rem;
+    text-align: center;
+  }
+
+  .export-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .export-btn {
+    padding: 0.6rem 1.2rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-light);
+    color: var(--text);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .export-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    background: var(--accent-light);
+  }
+
+  .export-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  .export-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.9rem;
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .export-checkbox input {
+    cursor: pointer;
+  }
+
+  .export-hint {
     margin-top: 0.5rem;
     font-size: 0.8rem;
     color: var(--text-dim);

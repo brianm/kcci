@@ -6,7 +6,7 @@ pub fn migrations() -> Migrations<'static> {
     Migrations::new(vec![
         // v1: Initial schema from original schema.sql
         M::up(include_str!("migrations/v001_initial.sql")),
-        // Future migrations:
-        // M::up("ALTER TABLE books ADD COLUMN new_field TEXT;"),
+        // v2: Remove unused cover_url and percent_read columns
+        M::up(include_str!("migrations/v002_drop_cover_percent.sql")),
     ])
 }

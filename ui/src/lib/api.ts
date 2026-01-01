@@ -11,8 +11,6 @@ export interface Book {
     asin: string;
     title: string;
     authors: string[];
-    cover_url: string | null;
-    percent_read: number;
     resource_type: string | null;
     origin_type: string | null;
     description: string | null;
@@ -157,4 +155,8 @@ export async function syncLibrary(
             unlisten();
         }
     }
+}
+
+export async function exportCsv(path: string, includeEnrichment?: boolean): Promise<number> {
+    return invoke('export_csv', { path, includeEnrichment });
 }

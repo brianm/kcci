@@ -1,5 +1,5 @@
 -- NOTE: This file is kept for reference only.
--- The actual schema is managed by migrations in migrations/v001_initial.sql
+-- The actual schema is managed by migrations in migrations/
 -- See migrations.rs for the migration runner.
 
 -- Core book data from Kindle export
@@ -7,8 +7,6 @@ CREATE TABLE IF NOT EXISTS books (
     asin TEXT PRIMARY KEY,
     title TEXT NOT NULL,
     authors TEXT NOT NULL,  -- JSON array
-    cover_url TEXT,
-    percent_read INTEGER DEFAULT 0,
     resource_type TEXT,
     origin_type TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP

@@ -16,8 +16,6 @@ pub struct Book {
     pub asin: String,
     pub title: String,
     pub authors: Vec<String>,
-    pub cover_url: Option<String>,
-    pub percent_read: i32,
     pub resource_type: Option<String>,
     pub origin_type: Option<String>,
 }
@@ -28,8 +26,6 @@ pub struct BookWithMeta {
     pub asin: String,
     pub title: String,
     pub authors: Vec<String>,
-    pub cover_url: Option<String>,
-    pub percent_read: i32,
     pub resource_type: Option<String>,
     pub origin_type: Option<String>,
     pub description: Option<String>,
@@ -85,8 +81,6 @@ pub struct ImportedBook {
     pub asin: String,
     pub title: String,
     pub authors: Vec<String>,
-    pub cover_url: Option<String>,
-    pub percentage_read: i32,
     pub resource_type: String,
     pub origin_type: String,
 }
@@ -132,14 +126,12 @@ impl Database {
         for book in books {
             let authors_json = serde_json::to_string(&book.authors)?;
             let rows = self.conn.execute(
-                "INSERT OR IGNORE INTO books (asin, title, authors, cover_url, percent_read, resource_type, origin_type)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                "INSERT OR IGNORE INTO books (asin, title, authors, resource_type, origin_type)
+                 VALUES (?1, ?2, ?3, ?4, ?5)",
                 params![
                     book.asin,
                     book.title,
                     authors_json,
-                    book.cover_url,
-                    book.percentage_read,
                     book.resource_type,
                     book.origin_type,
                 ],
@@ -171,8 +163,7 @@ impl Database {
     /// Full-text search across title, authors, description
     pub fn search_fts(&self, query: &str, limit: usize) -> Result<Vec<BookWithMeta>> {
         let mut stmt = self.conn.prepare(
-            "SELECT b.asin, b.title, b.authors, b.cover_url, b.percent_read,
-                    b.resource_type, b.origin_type,
+            "SELECT b.asin, b.title, b.authors, b.resource_type, b.origin_type,
                     m.description, m.subjects, m.publish_year, m.isbn, m.openlibrary_key,
                     bm25(books_fts) as rank
              FROM books_fts f
@@ -260,8 +251,7 @@ impl Database {
         };
 
         let sql = format!(
-            "SELECT b.asin, b.title, b.authors, b.cover_url, b.percent_read,
-                    b.resource_type, b.origin_type,
+            "SELECT b.asin, b.title, b.authors, b.resource_type, b.origin_type,
                     m.description, m.subjects, m.publish_year, m.isbn, m.openlibrary_key,
                     bm25(books_fts) as rank
              FROM books_fts f
@@ -327,8 +317,7 @@ impl Database {
         let blob = serialize_embedding(embedding);
 
         let mut stmt = self.conn.prepare(
-            "SELECT b.asin, b.title, b.authors, b.cover_url, b.percent_read,
-                    b.resource_type, b.origin_type,
+            "SELECT b.asin, b.title, b.authors, b.resource_type, b.origin_type,
                     m.description, m.subjects, m.publish_year, m.isbn, m.openlibrary_key,
                     v.distance
              FROM books_vec v
@@ -372,8 +361,7 @@ impl Database {
         let (where_clause, params) = build_filter_clause(filters);
 
         let sql = format!(
-            "SELECT b.asin, b.title, b.authors, b.cover_url, b.percent_read,
-                    b.resource_type, b.origin_type,
+            "SELECT b.asin, b.title, b.authors, b.resource_type, b.origin_type,
                     m.description, m.subjects, m.publish_year, m.isbn, m.openlibrary_key
              FROM books b
              LEFT JOIN metadata m ON b.asin = m.asin
@@ -454,8 +442,7 @@ impl Database {
     /// Get a single book by ASIN
     pub fn get_book_by_asin(&self, asin: &str) -> Result<Option<BookWithMeta>> {
         let mut stmt = self.conn.prepare(
-            "SELECT b.asin, b.title, b.authors, b.cover_url, b.percent_read,
-                    b.resource_type, b.origin_type,
+            "SELECT b.asin, b.title, b.authors, b.resource_type, b.origin_type,
                     m.description, m.subjects, m.publish_year, m.isbn, m.openlibrary_key
              FROM books b
              LEFT JOIN metadata m ON b.asin = m.asin
@@ -474,8 +461,7 @@ impl Database {
     /// Get books without metadata (for enrichment)
     pub fn get_books_without_metadata(&self) -> Result<Vec<Book>> {
         let mut stmt = self.conn.prepare(
-            "SELECT b.asin, b.title, b.authors, b.cover_url, b.percent_read,
-                    b.resource_type, b.origin_type
+            "SELECT b.asin, b.title, b.authors, b.resource_type, b.origin_type
              FROM books b
              LEFT JOIN metadata m ON b.asin = m.asin
              WHERE m.asin IS NULL",
@@ -486,10 +472,8 @@ impl Database {
                 asin: row.get(0)?,
                 title: row.get(1)?,
                 authors: parse_json_array(row.get::<_, String>(2)?),
-                cover_url: row.get(3)?,
-                percent_read: row.get(4)?,
-                resource_type: row.get(5)?,
-                origin_type: row.get(6)?,
+                resource_type: row.get(3)?,
+                origin_type: row.get(4)?,
             })
         })?;
 
@@ -597,39 +581,37 @@ fn parse_optional_json_array(json: Option<String>) -> Vec<String> {
     json.map(parse_json_array).unwrap_or_default()
 }
 
-/// Map a database row to BookWithMeta (base columns 0-11)
-/// Columns: asin, title, authors, cover_url, percent_read, resource_type, origin_type,
+/// Map a database row to BookWithMeta (base columns 0-9)
+/// Columns: asin, title, authors, resource_type, origin_type,
 ///          description, subjects, publish_year, isbn, openlibrary_key
 fn map_book_row(row: &rusqlite::Row) -> rusqlite::Result<BookWithMeta> {
     Ok(BookWithMeta {
         asin: row.get(0)?,
         title: row.get(1)?,
         authors: parse_json_array(row.get::<_, String>(2)?),
-        cover_url: row.get(3)?,
-        percent_read: row.get(4)?,
-        resource_type: row.get(5)?,
-        origin_type: row.get(6)?,
-        description: row.get(7)?,
-        subjects: parse_optional_json_array(row.get(8)?),
-        publish_year: row.get(9)?,
-        isbn: row.get(10)?,
-        openlibrary_key: row.get(11)?,
+        resource_type: row.get(3)?,
+        origin_type: row.get(4)?,
+        description: row.get(5)?,
+        subjects: parse_optional_json_array(row.get(6)?),
+        publish_year: row.get(7)?,
+        isbn: row.get(8)?,
+        openlibrary_key: row.get(9)?,
         distance: None,
         rank: None,
     })
 }
 
-/// Map a database row to BookWithMeta with rank (column 12)
+/// Map a database row to BookWithMeta with rank (column 10)
 fn map_book_row_with_rank(row: &rusqlite::Row) -> rusqlite::Result<BookWithMeta> {
     let mut book = map_book_row(row)?;
-    book.rank = row.get(12)?;
+    book.rank = row.get(10)?;
     Ok(book)
 }
 
-/// Map a database row to BookWithMeta with distance (column 12)
+/// Map a database row to BookWithMeta with distance (column 10)
 fn map_book_row_with_distance(row: &rusqlite::Row) -> rusqlite::Result<BookWithMeta> {
     let mut book = map_book_row(row)?;
-    book.distance = row.get(12)?;
+    book.distance = row.get(10)?;
     Ok(book)
 }
 

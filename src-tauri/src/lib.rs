@@ -130,6 +130,7 @@ pub fn run() {
             commands::clear_metadata,
             commands::get_model_status,
             commands::download_model,
+            commands::export_csv,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

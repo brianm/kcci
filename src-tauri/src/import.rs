@@ -169,12 +169,6 @@ fn extract_books_from_html(html: &str) -> Result<Vec<ImportedBook>> {
                                     .unwrap_or("")
                                     .to_string(),
                                 authors: extract_authors_from_json(item),
-                                cover_url: None, // Don't extract cover URLs
-                                percentage_read: item
-                                    .get("percentageRead")
-                                    .and_then(|v| v.as_i64())
-                                    .unwrap_or(0)
-                                    as i32,
                                 resource_type: item
                                     .get("resourceType")
                                     .and_then(|v| v.as_str())
@@ -257,8 +251,6 @@ fn extract_books_from_dom(html: &str) -> Result<Vec<ImportedBook>> {
             asin,
             title,
             authors: author_list,
-            cover_url: None, // Don't extract cover URLs
-            percentage_read: 0,
             resource_type: "EBOOK".to_string(),
             origin_type: "PURCHASE".to_string(),
         });
@@ -341,8 +333,6 @@ mod tests {
         assert_eq!(books.len(), 1);
         assert_eq!(books[0].asin, "B001");
         assert_eq!(books[0].title, "Test Book");
-        assert_eq!(books[0].percentage_read, 50);
-        assert!(books[0].cover_url.is_none());
     }
 
     #[test]
@@ -357,7 +347,6 @@ mod tests {
         assert_eq!(books[0].asin, "B0TESTBOOK1");
         assert_eq!(books[0].title, "My Test Book");
         assert_eq!(books[0].authors, vec!["Test Author"]);
-        assert!(books[0].cover_url.is_none());
     }
 
     #[test]

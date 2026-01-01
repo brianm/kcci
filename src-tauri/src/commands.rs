@@ -323,6 +323,82 @@ fn get_model_dir(app: &AppHandle) -> Result<PathBuf> {
     Ok(app_data.join("onnx-model"))
 }
 
+/// Export books to CSV format and write to file
+#[tauri::command]
+pub fn export_csv(
+    db: State<DbState>,
+    path: String,
+    include_enrichment: Option<bool>,
+) -> Result<usize> {
+    let include_enrichment = include_enrichment.unwrap_or(false);
+    let db = db.0.lock().unwrap();
+
+    // Get all books without pagination
+    let books = db.get_all_books(usize::MAX, 0, Some("title"), Some("asc"), &[])?;
+    let count = books.len();
+
+    let mut csv = String::new();
+
+    // Header row
+    if include_enrichment {
+        csv.push_str("asin,title,authors,resource_type,origin_type,description,subjects,publish_year,isbn,openlibrary_key\n");
+    } else {
+        csv.push_str("asin,title,authors,resource_type,origin_type\n");
+    }
+
+    // Data rows
+    for book in books {
+        let authors = book.authors.join("; ");
+        let row = if include_enrichment {
+            let subjects = book.subjects.join("; ");
+            let description = book
+                .description
+                .as_deref()
+                .unwrap_or("")
+                .replace('\n', " ")
+                .replace('\r', "");
+            format!(
+                "{},{},{},{},{},{},{},{},{},{}\n",
+                escape_csv(&book.asin),
+                escape_csv(&book.title),
+                escape_csv(&authors),
+                escape_csv(book.resource_type.as_deref().unwrap_or("")),
+                escape_csv(book.origin_type.as_deref().unwrap_or("")),
+                escape_csv(&description),
+                escape_csv(&subjects),
+                book.publish_year.map(|y| y.to_string()).unwrap_or_default(),
+                escape_csv(book.isbn.as_deref().unwrap_or("")),
+                escape_csv(book.openlibrary_key.as_deref().unwrap_or("")),
+            )
+        } else {
+            format!(
+                "{},{},{},{},{}\n",
+                escape_csv(&book.asin),
+                escape_csv(&book.title),
+                escape_csv(&authors),
+                escape_csv(book.resource_type.as_deref().unwrap_or("")),
+                escape_csv(book.origin_type.as_deref().unwrap_or("")),
+            )
+        };
+        csv.push_str(&row);
+    }
+
+    // Write to file
+    let mut file = File::create(&path)?;
+    file.write_all(csv.as_bytes())?;
+
+    Ok(count)
+}
+
+/// Escape a value for CSV (quote if contains comma, quote, or newline)
+fn escape_csv(value: &str) -> String {
+    if value.contains(',') || value.contains('"') || value.contains('\n') {
+        format!("\"{}\"", value.replace('"', "\"\""))
+    } else {
+        value.to_string()
+    }
+}
+
 /// Get the database path (~/Library/Application Support/Ook/books.db)
 pub fn get_db_path(_app: &AppHandle) -> Result<PathBuf> {
     let home = std::env::var("HOME")
