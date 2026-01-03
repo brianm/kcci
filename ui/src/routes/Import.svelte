@@ -25,7 +25,18 @@
 
   async function selectFile() {
     const path = await open({
-      filters: [{ name: 'Webarchive', extensions: ['webarchive'] }]
+      filters: [{ name: 'Webarchive', extensions: ['webarchive', 'mhtml', 'html'] }]
+    });
+
+    if (path) {
+      await startSync(path as string);
+    }
+  }
+
+  async function selectAmazonFolder() {
+    const path = await open({
+      directory: true,
+      title: 'Select Amazon Kindle Export Folder'
     });
 
     if (path) {
@@ -117,28 +128,57 @@
     </div>
   {/if}
 
-  <div class="instructions">
-    <h3>How to get your Kindle library webarchive:</h3>
-    <ol>
-      <li>Open Safari and go to <button class="link-button" onclick={() => openInSafari('https://read.amazon.com')}>read.amazon.com</button></li>
-      <li>Sign in with your Amazon account</li>
-      <li><strong>Scroll down repeatedly</strong> until all your books are loaded (the page lazy-loads as you scroll)</li>
-      <li>From the menu bar, choose <strong>File &gt; Save As...</strong></li>
-      <li>Set Format to <strong>"Web Archive"</strong></li>
-      <li>Save the file, then click below to select it</li>
-    </ol>
-  </div>
+  <div class="import-methods">
+    <div class="import-method">
+      <div class="instructions">
+        <h3>Option 1: Amazon Data Export (Recommended)</h3>
+        <ol>
+          <li>Go to <button class="link-button" onclick={() => openInSafari('https://www.amazon.com/hz/privacy-central/data-requests/preview.html')}>Amazon Download Your Data</button></li>
+          <li>Check <strong>"Kindle"</strong> and click "Submit Request"</li>
+          <li>Wait for email from Amazon (can take a few days)</li>
+          <li>Download and extract the ZIP file</li>
+          <li>Select the extracted <strong>"Kindle"</strong> folder below</li>
+        </ol>
+        <p class="method-note">This method provides purchase dates, ownership status, and more complete metadata.</p>
+      </div>
 
-  <button class="import-zone" onclick={selectFile} disabled={syncing}>
-    <div class="import-zone-icon">📁</div>
-    <div class="import-zone-text">
-      {#if syncing}
-        Syncing...
-      {:else}
-        Click to select a webarchive file
-      {/if}
+      <button class="import-zone" onclick={selectAmazonFolder} disabled={syncing}>
+        <div class="import-zone-icon">📂</div>
+        <div class="import-zone-text">
+          {#if syncing}
+            Syncing...
+          {:else}
+            Click to select Amazon export folder
+          {/if}
+        </div>
+      </button>
     </div>
-  </button>
+
+    <div class="import-method">
+      <div class="instructions">
+        <h3>Option 2: Safari Webarchive</h3>
+        <ol>
+          <li>Open Safari and go to <button class="link-button" onclick={() => openInSafari('https://read.amazon.com')}>read.amazon.com</button></li>
+          <li>Sign in with your Amazon account</li>
+          <li><strong>Scroll down repeatedly</strong> until all your books are loaded</li>
+          <li>From the menu bar, choose <strong>File &gt; Save As...</strong></li>
+          <li>Set Format to <strong>"Web Archive"</strong> and save</li>
+        </ol>
+        <p class="method-note">Quick method if you don't want to wait for Amazon's data export.</p>
+      </div>
+
+      <button class="import-zone" onclick={selectFile} disabled={syncing}>
+        <div class="import-zone-icon">📁</div>
+        <div class="import-zone-text">
+          {#if syncing}
+            Syncing...
+          {:else}
+            Click to select a webarchive file
+          {/if}
+        </div>
+      </button>
+    </div>
+  </div>
 
   {#if stats && stats.total_books > 0}
     <div class="reenrich-section">
@@ -206,12 +246,31 @@
     font-size: 0.95rem;
   }
 
+  .import-methods {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  @media (max-width: 900px) {
+    .import-methods {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .import-method {
+    display: flex;
+    flex-direction: column;
+  }
+
   .instructions {
     background: var(--bg-light);
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 1.5rem 2rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
+    flex: 1;
   }
 
   .instructions h3 {
@@ -228,6 +287,13 @@
   .instructions li {
     margin-bottom: 0.6rem;
     line-height: 1.6;
+  }
+
+  .method-note {
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    font-style: italic;
   }
 
   .link-button {
@@ -250,9 +316,8 @@
     width: 100%;
     border: 2px dashed var(--border);
     border-radius: 8px;
-    padding: 2.5rem;
+    padding: 2rem;
     text-align: center;
-    margin-bottom: 1.5rem;
     cursor: pointer;
     transition: border-color 0.2s, background 0.2s;
     background: transparent;

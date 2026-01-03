@@ -21,6 +21,9 @@ pub enum OokError {
     #[error("Webarchive parse error: {0}")]
     Webarchive(String),
 
+    #[error("Amazon import error: {0}")]
+    AmazonImport(String),
+
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
 

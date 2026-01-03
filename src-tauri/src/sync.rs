@@ -4,6 +4,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter};
 
+use crate::amazon_import;
 use crate::db::{Database, EnrichmentData};
 use crate::embed;
 use crate::enrich::OpenLibrary;
@@ -46,21 +47,32 @@ pub fn sync(
         let _ = app.emit("sync-progress", progress);
     };
 
-    // Stage 1: Import (if import file provided)
+    // Stage 1: Import (if import file/folder provided)
     if let Some(path) = import_path {
         let filename = path
             .file_name()
             .map(|s| s.to_string_lossy().to_string())
             .unwrap_or_else(|| "file".to_string());
 
+        // Detect import type: Amazon export folder or webarchive file
+        let is_amazon = amazon_import::is_amazon_export(path);
+
         emit(SyncProgress {
             stage: "import".into(),
-            message: format!("Reading {}...", filename),
+            message: format!(
+                "Reading {} ({})...",
+                filename,
+                if is_amazon { "Amazon export" } else { "webarchive" }
+            ),
             current: None,
             total: None,
         });
 
-        let books = import::parse_import_file(path)?;
+        let books = if is_amazon {
+            amazon_import::parse_amazon_export(path)?
+        } else {
+            import::parse_import_file(path)?
+        };
 
         emit(SyncProgress {
             stage: "import".into(),
