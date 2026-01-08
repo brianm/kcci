@@ -1,4 +1,4 @@
-.PHONY: all dev build clean clean-all export-model app check fmt ui release release-patch release-minor release-major
+.PHONY: all dev build clean clean-all export-model app check fmt ui release release-patch release-minor release-major version-patch version-minor version-major
 
 all: build
 
@@ -48,17 +48,38 @@ export-model:
 	pip install transformers 'optimum[onnxruntime]'
 	python scripts/export-onnx-model.py
 
-# Release targets (bump version, commit, tag, push)
-# Usage: make release-patch (0.2.2 -> 0.2.3)
-#        make release-minor (0.2.2 -> 0.3.0)
-#        make release-major (0.2.2 -> 1.0.0)
+# =============================================================================
+# RELEASE TARGETS
+# Full release workflow: bump version, build, notarize, push tag, create release
+#
+# Prerequisites:
+#   - Clean working copy (no uncommitted changes)
+#   - Environment variables set: APPLE_ID, APPLE_PASSWORD, APPLE_TEAM_ID
+#   - gh CLI authenticated (run 'gh auth login' if needed)
+#
+# Usage:
+#   make release-patch  # 0.3.1 -> 0.3.2
+#   make release-minor  # 0.3.1 -> 0.4.0
+#   make release-major  # 0.3.1 -> 1.0.0
+# =============================================================================
+
 release: release-patch
 
 release-patch:
-	cd src-tauri && cargo release patch --execute
+	@./scripts/release.sh patch
 
 release-minor:
-	cd src-tauri && cargo release minor --execute
+	@./scripts/release.sh minor
 
 release-major:
+	@./scripts/release.sh major
+
+# Version bump only (without build/release) - useful for testing
+version-patch:
+	cd src-tauri && cargo release patch --execute
+
+version-minor:
+	cd src-tauri && cargo release minor --execute
+
+version-major:
 	cd src-tauri && cargo release major --execute
