@@ -9,9 +9,89 @@ mod sync;
 
 use commands::{get_db_path, DbState};
 use db::Database;
+use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::menu::{AboutMetadata, Menu, Submenu};
-use tauri::Manager;
+use tauri::{AppHandle, Emitter, Manager};
+
+/// Get the ONNX model directory (bundled or downloaded)
+fn get_model_dir(app: &AppHandle) -> Option<PathBuf> {
+    // Try resource directory first (bundled with app)
+    if let Ok(resource_dir) = app.path().resource_dir() {
+        let bundled = resource_dir.join("binaries").join("onnx-model");
+        if bundled.join("model.onnx").exists() {
+            return Some(bundled);
+        }
+    }
+
+    // Fall back to app data directory
+    if let Ok(app_data) = app.path().app_data_dir() {
+        let downloaded = app_data.join("onnx-model");
+        if downloaded.join("model.onnx").exists() {
+            return Some(downloaded);
+        }
+    }
+
+    None
+}
+
+/// Auto-generate embeddings for books that need them (runs in background)
+fn auto_embed_books(app: AppHandle) {
+    std::thread::spawn(move || {
+        let model_dir = match get_model_dir(&app) {
+            Some(dir) => dir,
+            None => {
+                log::debug!("Model not available, skipping auto-embedding");
+                return;
+            }
+        };
+
+        let db_state: tauri::State<DbState> = app.state();
+        let db = db_state.0.lock().unwrap();
+
+        let books = match db.get_books_for_embedding() {
+            Ok(books) => books,
+            Err(e) => {
+                log::error!("Failed to get books for embedding: {}", e);
+                return;
+            }
+        };
+
+        if books.is_empty() {
+            log::debug!("No books need embedding");
+            return;
+        }
+
+        log::info!("Auto-embedding {} books in background", books.len());
+        let _ = app.emit("auto-embed-start", books.len());
+
+        if let Err(e) = embed::init_embedder(&model_dir) {
+            log::error!("Failed to init embedder: {}", e);
+            return;
+        }
+
+        for (i, book) in books.iter().enumerate() {
+            let text = embed::get_embedding_text(&book.title, &book.authors, &book.description);
+            match embed::embed_text(&text) {
+                Ok(embedding) => {
+                    if let Err(e) = db.save_embedding(&book.asin, &embedding) {
+                        log::error!("Failed to save embedding for {}: {}", book.asin, e);
+                    }
+                }
+                Err(e) => {
+                    log::error!("Failed to embed {}: {}", book.asin, e);
+                }
+            }
+
+            if (i + 1) % 50 == 0 {
+                log::info!("Auto-embedded {}/{} books", i + 1, books.len());
+            }
+        }
+
+        log::info!("Auto-embedding complete: {} books", books.len());
+        let _ = app.emit("auto-embed-complete", books.len());
+    });
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -112,6 +192,9 @@ pub fn run() {
             log::info!("Database initialized");
 
             app.manage(DbState(Mutex::new(database)));
+
+            // Auto-generate embeddings for books that need them (background)
+            auto_embed_books(app.handle().clone());
 
             // Show the main window (it starts hidden in tauri.conf.json)
             if let Some(window) = app.get_webview_window("main") {

@@ -8,5 +8,7 @@ pub fn migrations() -> Migrations<'static> {
         M::up(include_str!("migrations/v001_initial.sql")),
         // v2: Remove unused cover_url and percent_read columns
         M::up(include_str!("migrations/v002_drop_cover_percent.sql")),
+        // v3: Rebuild FTS index to ensure all books are indexed
+        M::up(include_str!("migrations/v003_rebuild_fts.sql")),
     ])
 }

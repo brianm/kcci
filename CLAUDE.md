@@ -60,6 +60,30 @@ src-tauri/binaries/onnx-model/
 
 **Data flow:** Safari webarchive -> webarchive.rs (parse) -> db (store) -> enrich.rs (OpenLibrary) -> embed.rs (ONNX) -> sqlite-vec (search)
 
+## Database Migrations
+
+Schema changes and data migrations are managed via `rusqlite_migration`. Migrations run automatically when the database opens.
+
+```
+src-tauri/src/db/
+├── migrations.rs              # Migration registry
+└── migrations/
+    ├── v001_initial.sql       # Initial schema
+    ├── v002_drop_cover_percent.sql
+    └── v003_rebuild_fts.sql   # etc.
+```
+
+**To add a migration:**
+1. Create `src-tauri/src/db/migrations/vNNN_description.sql`
+2. Register in `migrations.rs`: `M::up(include_str!("migrations/vNNN_description.sql"))`
+
+**Guidelines:**
+- Use migrations for schema changes (CREATE TABLE, ALTER TABLE, etc.)
+- Use migrations to rebuild indexes or backfill data that can be done in pure SQL
+- For operations requiring Rust code (like embedding generation), add startup hooks in `lib.rs` that check if work is needed
+
+**Note:** `schema.sql` is for reference only; the actual schema is defined by migrations.
+
 ## Key Dependencies
 
 ### Rust (src-tauri/Cargo.toml)

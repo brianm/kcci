@@ -483,14 +483,14 @@ impl Database {
             .map_err(|e| e.into())
     }
 
-    /// Get books with metadata but without embeddings
+    /// Get books without embeddings (will use title+authors if no description)
     pub fn get_books_for_embedding(&self) -> Result<Vec<BookForEmbedding>> {
         let mut stmt = self.conn.prepare(
-            "SELECT b.asin, b.title, b.authors, m.description
+            "SELECT b.asin, b.title, b.authors, COALESCE(m.description, '')
              FROM books b
-             JOIN metadata m ON b.asin = m.asin
+             LEFT JOIN metadata m ON b.asin = m.asin
              LEFT JOIN books_vec v ON b.asin = v.asin
-             WHERE v.asin IS NULL AND m.description IS NOT NULL",
+             WHERE v.asin IS NULL",
         )?;
 
         let rows = stmt.query_map([], |row| {
@@ -498,7 +498,7 @@ impl Database {
                 asin: row.get(0)?,
                 title: row.get(1)?,
                 authors: parse_json_array(row.get::<_, String>(2)?),
-                description: row.get::<_, Option<String>>(3)?.unwrap_or_default(),
+                description: row.get(3)?,
             })
         })?;
 

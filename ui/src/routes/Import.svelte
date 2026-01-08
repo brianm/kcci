@@ -2,7 +2,6 @@
   import { open, save } from '@tauri-apps/plugin-dialog';
   import { Command } from '@tauri-apps/plugin-shell';
   import { syncLibrary, clearMetadata, exportCsv, type SyncProgress, type SyncStats, type Stats } from '../lib/api';
-  import ModelManager from '../components/ModelManager.svelte';
 
   async function openInSafari(url: string) {
     await Command.create('open-safari', ['-a', 'Safari', url]).execute();
@@ -74,6 +73,25 @@
       'embed': 'Embedding'
     };
     return names[stage] || stage;
+  }
+
+  async function continueEnrichment() {
+    syncing = true;
+    progress = null;
+    syncStats = null;
+    error = null;
+
+    try {
+      // Sync without a webarchive file - enriches books missing metadata, embeds books missing embeddings
+      syncStats = await syncLibrary(undefined, (p) => {
+        progress = p;
+      });
+      oncomplete?.();
+    } catch (e) {
+      error = String(e);
+    } finally {
+      syncing = false;
+    }
   }
 
   async function reEnrich() {
@@ -182,8 +200,16 @@
 
   {#if stats && stats.total_books > 0}
     <div class="reenrich-section">
+      {#if stats.total_books > stats.enriched || stats.enriched > stats.with_embeddings}
+        <button class="reenrich-btn primary" onclick={continueEnrichment} disabled={syncing}>
+          Continue enrichment
+        </button>
+        <p class="reenrich-hint">
+          Process {stats.total_books - stats.enriched} books missing metadata and {stats.enriched - stats.with_embeddings} missing embeddings.
+        </p>
+      {/if}
       <button class="reenrich-btn" onclick={reEnrich} disabled={syncing}>
-        Re-fetch metadata from OpenLibrary
+        Re-fetch all metadata
       </button>
       <p class="reenrich-hint">
         Clears existing metadata and re-fetches from OpenLibrary for all {stats.total_books} books.
@@ -205,8 +231,6 @@
       </p>
     </div>
   {/if}
-
-  <ModelManager ondownloaded={() => oncomplete?.()} />
 
   {#if syncing && progress}
     <div class="sync-progress">
@@ -453,6 +477,17 @@
   .reenrich-btn:disabled {
     cursor: not-allowed;
     opacity: 0.7;
+  }
+
+  .reenrich-btn.primary {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+
+  .reenrich-btn.primary:hover:not(:disabled) {
+    background: var(--accent-hover, var(--accent));
+    border-color: var(--accent-hover, var(--accent));
   }
 
   .reenrich-hint {
