@@ -43,9 +43,11 @@ check_notarization_env() {
 
 # Check for uncommitted changes
 check_clean_working_copy() {
-    if ! jj status --no-pager --color=never 2>&1 | grep -q "The working copy has no changes"; then
+    local status_output
+    status_output=$(jj status --no-pager --color=never 2>&1)
+    if [[ "$status_output" != *"The working copy has no changes"* ]]; then
         log_error "Working copy has uncommitted changes. Commit or abandon them first."
-        jj status
+        echo "$status_output"
         exit 1
     fi
     log_info "Working copy is clean"
