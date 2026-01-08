@@ -43,7 +43,7 @@ check_notarization_env() {
 
 # Check for uncommitted changes
 check_clean_working_copy() {
-    if ! jj status 2>/dev/null | grep -q "The working copy has no changes"; then
+    if ! jj status --no-pager --color=never 2>&1 | grep -q "The working copy has no changes"; then
         log_error "Working copy has uncommitted changes. Commit or abandon them first."
         jj status
         exit 1
