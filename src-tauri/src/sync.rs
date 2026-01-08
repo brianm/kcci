@@ -1,4 +1,5 @@
 use serde::Serialize;
+use std::collections::HashSet;
 use std::path::Path;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -47,6 +48,9 @@ pub fn sync(
         let _ = app.emit("sync-progress", progress);
     };
 
+    // Track ASINs of newly imported books (for filtering enrichment)
+    let mut imported_asins: HashSet<String> = HashSet::new();
+
     // Stage 1: Import (if import file/folder provided)
     if let Some(path) = import_path {
         let filename = path
@@ -82,7 +86,9 @@ pub fn sync(
         });
 
         if !books.is_empty() {
-            stats.imported = db.import_books(&books)?;
+            let newly_imported = db.import_books(&books)?;
+            stats.imported = newly_imported.len();
+            imported_asins = newly_imported.into_iter().collect();
 
             if stats.imported > 0 {
                 db.rebuild_fts()?;
@@ -104,7 +110,20 @@ pub fn sync(
     }
 
     // Stage 2: Enrich
-    let books_to_enrich = db.get_books_without_metadata()?;
+    // When importing, only enrich newly imported books
+    // When not importing (re-fetch metadata), enrich all books without metadata
+    let books_to_enrich = if import_path.is_some() && !imported_asins.is_empty() {
+        db.get_books_without_metadata()?
+            .into_iter()
+            .filter(|b| imported_asins.contains(&b.asin))
+            .collect()
+    } else if import_path.is_some() {
+        // Import with no new books - skip enrichment
+        Vec::new()
+    } else {
+        // No import path - enrich all books without metadata (re-fetch scenario)
+        db.get_books_without_metadata()?
+    };
     let total_to_enrich = books_to_enrich.len();
 
     if total_to_enrich == 0 {

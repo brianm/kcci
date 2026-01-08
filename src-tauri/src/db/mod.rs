@@ -120,9 +120,9 @@ impl Database {
         Ok(Self { conn })
     }
 
-    /// Import books from webarchive parse result
-    pub fn import_books(&self, books: &[ImportedBook]) -> Result<usize> {
-        let mut count = 0;
+    /// Import books and return the ASINs of newly imported books
+    pub fn import_books(&self, books: &[ImportedBook]) -> Result<Vec<String>> {
+        let mut imported_asins = Vec::new();
         for book in books {
             let authors_json = serde_json::to_string(&book.authors)?;
             let rows = self.conn.execute(
@@ -136,9 +136,11 @@ impl Database {
                     book.origin_type,
                 ],
             )?;
-            count += rows;
+            if rows > 0 {
+                imported_asins.push(book.asin.clone());
+            }
         }
-        Ok(count)
+        Ok(imported_asins)
     }
 
     /// Get database statistics
